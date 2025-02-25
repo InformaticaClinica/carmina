@@ -3,11 +3,16 @@ from io import StringIO
 import re
 import pandas as pd 
 import os
+import sys
 import time
 
 class Utils:
     def __init__(self):
-        pass
+        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if PROJECT_ROOT not in sys.path:
+            sys.path.append(PROJECT_ROOT)
+
+
     def read_text(self, filename=None):
         with open(filename, 'r') as archivo:
             return archivo.read()
