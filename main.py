@@ -20,15 +20,25 @@ from utils.utils import Utils as U
 PATH = './data/carmen/'
 
 def first_iteration(metrics, filename, llm, name_model):
+    print("1")
     context = LLMContext(llm)
+    print("1")
     data = {}
+    print("1")
     data["system"] = U.read_text("prompts/system_prompt1.txt")
+    print("1")
     data["user"] = U.read_text(f'{PATH}txt/replaced/{filename}')
+    print("1")
     text_generated = context.generate_response(data)
+    print("1")
     U.store_text(text_generated, filename, "first/" + name_model)
+    print("1")
     ground_truth = U.read_text(f'{PATH}/masked/{filename}')
+    print("1")
     metrics.set_filename(filename)
+    print("1")
     metrics.calculate(ground_truth, text_generated)
+    print("1")
     metrics.store_metrics()
     return metrics, text_generated
 
