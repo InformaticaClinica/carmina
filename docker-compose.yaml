@@ -1,13 +1,19 @@
 version: '3.8'
 
 services:
-  python-app:
+  benchmark:
     build: .
-    container_name: benchmark
-    volumes:
-      - .:/app
-    env_file:
-      - .env
+    container_name: anonimization-benchmark
     environment:
       - PYTHONUNBUFFERED=1
-    command: python3
+    volumes:
+      - .:/app
+    working_dir: /app
+    networks:
+      - benchmark_network
+    command: ["python", "main.py"]
+    extra_hosts:
+       - "host.docker.internal:host-gateway"
+networks:
+  benchmark_network:
+    driver: bridge

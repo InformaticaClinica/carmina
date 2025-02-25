@@ -1,12 +1,19 @@
+import sys
+sys.stdout.flush()
+
 import time
+import psutil
+import csv
+from datetime import datetime
 
 # Models
 from llm import LLMContext
 #from llm import ChatGPTModel, ChatGPTminiModel
-from llm import Llama3_1_90b_Model, Llama3_1_405b_Model, Llama3_1_11b_Model
-from llm import Haiku3Model, OpusModel
-from llm import BigMistralModel, Sonet3_5Model
-from llm import  Llama3_2_90b_Model
+# from llm import Llama3_1_90b_Model, Llama3_1_405b_Model, Llama3_1_11b_Model
+# from llm import Haiku3Model, OpusModel
+# from llm import BigMistralModel, Sonet3_5Model
+# from llm import  Llama3_2_90b_Model
+from llm import  Llama3_3_70b_Model
 from metrics import Metrics, MetricsDict
 import os
 import re
@@ -93,12 +100,15 @@ def first_iteration(metrics, filename, llm, name_model):
     data = {}
     data["system"] = read_text("prompts/system_prompt1.txt")
     data["user"] = read_text(f'{PATH}txt/replaced/{filename}')
+    print("before")
     text_generated = context.generate_response(data)
+    print(" ==finish call==")
+    print(text_generated)
+    store_text(text_generated, filename, "first/" + name_model)
     ground_truth = read_text(f'{PATH}/masked/{filename}')
     metrics.set_filename(filename)
     metrics.calculate(ground_truth, text_generated)
     metrics.store_metrics()
-    store_text(text_generated, filename, "first/" + name_model)
     return metrics, text_generated
 
 # TODO: implement logic when there is no labels to classify (input_text = '')
@@ -149,7 +159,10 @@ def anonimized_loop(llm, name_model):
     metrics_thrid = Metrics(name_model+"_3rd")
     for filename in sorted(os.listdir(f'{PATH}txt/replaced/')):
         try:
+            init_main()
+            print("first")
             metrics, text_generated = first_iteration(metrics, filename, llm, name_model)
+            print("gere")
             dataframe_label = second_iteration(metrics_second, text_generated, llm, name_model, filename)
             metrics_thrid = third_iteration(metrics_thrid, text_generated, dataframe_label, name_model, filename)
             # dictionary = second_iteration_hips(None, text_generated, llm, name_model, filename)
@@ -157,8 +170,7 @@ def anonimized_loop(llm, name_model):
             # _ = third_iteration_hips(None, text_generated, dictionary, name_model, filename)
             # print("hello")
             # counter += 1
-            # if counter == 10:
-            #     break
+            # if counter == 11:
         except Exception as e:
             print(filename)
             print(e)
@@ -168,14 +180,74 @@ def anonimized_loop(llm, name_model):
     save_time_to_file(name_model, start_time)
 
 def main():
+    anonimized_loop(Llama3_3_70b_Model(), "Llama3_3_70b_Model")
     # anonimized_loop(Llama3_2_90b_Model(), "Llama3_2_3b_Model")
-    anonimized_loop(Llama3_1_90b_Model(), "Llama3_1_70b_Model")
-    anonimized_loop(Llama3_1_405b_Model(), "Llama3_1_405b_Model")
-    anonimized_loop(Llama3_1_11b_Model(), "Llama3_1_8b_Model")
-    anonimized_loop(Haiku3Model(), "Haiku3Model")
-    anonimized_loop(OpusModel(), "OpusModel")
-    anonimized_loop(Sonet3_5Model(), "Sonet3_5Model")
-    anonimized_loop(BigMistralModel(), "BigMistralModel")
+    # anonimized_loop(Llama3_1_90b_Model(), "Llama3_1_70b_Model")
+    # anonimized_loop(Llama3_1_405b_Model(), "Llama3_1_405b_Model")
+    # anonimized_loop(Llama3_1_11b_Model(), "Llama3_1_8b_Model")
+    # anonimized_loop(Haiku3Model(), "Haiku3Model")
+    # anonimized_loop(OpusModel(), "OpusModel")
+    # anonimized_loop(Sonet3_5Model(), "Sonet3_5Model")
+    # anonimized_loop(BigMistralModel(), "BigMistralModel")
+
+
+
+
+
+# Umbral de temperatura en grados Celsius
+TEMP_UMBRAL = 60.0  # Ajusta según el hardware
+CSV_FILE = "time_on_waiting.csv"
+
+def obtener_temperatura():
+    """ Obtiene la temperatura de la CPU """
+    try:
+        temperaturas = psutil.sensors_temperatures()
+        if "coretemp" in temperaturas:
+            return max(temp.current for temp in temperaturas["coretemp"])
+        elif "cpu_thermal" in temperaturas:
+            return temperaturas["cpu_thermal"][0].current
+        else:
+            print("No se pudo obtener la temperatura.")
+            return None
+    except AttributeError:
+        print("El sistema no soporta la obtención de temperatura.")
+        return None
+
+def print_temp(temp):
+    if temp is not None:
+        print(f"Temperatura actual: {temp}°C")
+
+def registrar_tiempo(inicio, fin):
+    """ Registra en un archivo CSV el tiempo de espera por alta temperatura """
+    diferencia = (fin - inicio).total_seconds()
+
+    # Crear el archivo CSV con encabezados si no existe
+    try:
+        with open(CSV_FILE, "x", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["init", "end", "difference"])
+    except FileExistsError:
+        pass
+
+    # Registrar la información en el CSV
+    with open(CSV_FILE, "a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([inicio, fin, diferencia])
+
+def init_main():
+    temp = obtener_temperatura()
+    print_temp(temp)
+
+    if temp >= TEMP_UMBRAL:
+        inicio_espera = datetime.now()
+        while temp >= TEMP_UMBRAL:
+            temp = obtener_temperatura()
+            print_temp(temp)
+            time.sleep(10)  # Esperar 10 segundos antes de volver a verificar
+        fin_espera = datetime.now()
+        registrar_tiempo(inicio_espera, fin_espera)
+
+    print("Temperatura dentro del rango, reanudando ejecución.")
 
 if __name__ == "__main__":
     main()
