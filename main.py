@@ -17,7 +17,7 @@ from llm import LLMContext
 # from llm import Haiku3Model, OpusModel
 # from llm import BigMistralModel, Sonet3_5Model
 # from llm import  Llama3_2_90b_Model
-from llm import  Llama3_3_70b_Model
+from llm import  Deepseek_70b
 
 from metrics import Metrics, MetricsDict
 
@@ -100,7 +100,7 @@ def anonimized_loop(llm, name_model):
     U.save_time_to_file(name_model, start_time)
 
 def main():
-    anonimized_loop(Llama3_3_70b_Model(), "Llama3_3_70b_Model")
+    anonimized_loop(Deepseek_70b(), "Deepseek_70b")
     # anonimized_loop(Llama3_2_90b_Model(), "Llama3_2_3b_Model")
     # anonimized_loop(Llama3_1_90b_Model(), "Llama3_1_70b_Model")
     # anonimized_loop(Llama3_1_405b_Model(), "Llama3_1_405b_Model")

@@ -12,7 +12,7 @@ from .context.llm_context import LLMContext
 # from .strategy.sonet3_5_model import Sonet3_5Model
 # from .strategy.chatgpt_model import ChatGPTModel
 # from .strategy.chatgpt_mini_model import ChatGPTminiModel
-from .strategy.llama3_3_model import Llama3_3_70b_Model
+from .strategy.deepseek_70b import Deepseek_70b
 
 # __all__ = [
 #     "LLMContext",
@@ -33,5 +33,5 @@ from .strategy.llama3_3_model import Llama3_3_70b_Model
 # ]
 __all__ = [
     "LLMContext",
-    "Llama3_3_70b_Model"
+    "Deepseek_70b"
 ]
