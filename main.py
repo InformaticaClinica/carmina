@@ -77,18 +77,14 @@ def third_iteration(metrics_thrid, text_generated, dictionary, name_model, filen
 
 def anonimized_loop(llm, name_model):
     start_time = time.time()
-    # counter = 0
     metrics = Metrics(name_model)
     metrics_second = MetricsDict(name_model+"_2rd")
     metrics_thrid = Metrics(name_model+"_3rd")
     for filename in sorted(os.listdir(f'{PATH}txt/replaced/')):
         try:
-            T.init_main()
-            print("here")
+            # T.init_main()
             metrics, text_generated = first_iteration(metrics, filename, llm, name_model)
-            print("here2")
             dataframe_label = second_iteration(metrics_second, text_generated, llm, name_model, filename)
-            print("here3")
             metrics_thrid = third_iteration(metrics_thrid, text_generated, dataframe_label, name_model, filename)
             break
         except Exception as e:
