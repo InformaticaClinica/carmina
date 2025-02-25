@@ -46,14 +46,14 @@ class Utils:
         return modified_text
     
     
-    def store_text(text, filename, name_model):
+    def store_text(self, text, filename, name_model):
         folder_path = f"./data/anon/raw/{name_model}"
         file_path = os.path.join(folder_path, f"{filename}")
         os.makedirs(folder_path, exist_ok=True)
         with open(file_path, 'w') as file:
             file.write(text)
 
-    def save_time_to_file(block, start_time):
+    def save_time_to_file(self, block, start_time):
         end_time_1 = time.time()
         execution_time = end_time_1 - start_time
         filename = f"./data/metrics/time/{block}.txt"
