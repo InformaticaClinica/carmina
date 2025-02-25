@@ -1,6 +1,5 @@
 import sys
 sys.stdout.flush()
-
 import time
 import psutil
 import csv
