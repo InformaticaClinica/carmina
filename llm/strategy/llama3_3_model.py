@@ -8,7 +8,8 @@ class Llama3_3_70b_Model(LLMStrategy):
     def __init__(self):
         super().__init__()
         #self._model_id = "llama3.3"
-        self._model_id = "deepseek-r1:70b"
+        # self._model_id = "deepseek-r1:70b"
+        self._model_id = "llama3.2:latest"
         self.OLLAMA_URL ="http://host.docker.internal:11434/api/generate"
         self._prompt_handler = OllamaPromptHandler()
 
