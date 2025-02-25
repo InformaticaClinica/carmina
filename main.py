@@ -15,9 +15,10 @@ from llm import LLMContext
 from llm import  Llama3_3_70b_Model
 from metrics import Metrics, MetricsDict
 import os
-from utils.utils import Utils as U
+from utils.utils import Utils 
 
 PATH = './data/carmen/'
+U = Utils()
 
 def first_iteration(metrics, filename, llm, name_model):
     print("1")
