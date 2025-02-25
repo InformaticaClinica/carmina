@@ -36,7 +36,7 @@ def first_iteration(metrics, filename, llm, name_model):
 def second_iteration(metrics_second, text_generated, llm, name_model, filename):
     prompt_filename = 'prompts/system_prompt2_beta.txt'
 
-    labels = re.findall(r'\[\*\*(.*?)\*\*\]', text_generated)º
+    labels = re.findall(r'\[\*\*(.*?)\*\*\]', text_generated)
     labels = list(map(lambda x: f'"{x}"', labels))
     input_text = '\n'.join(labels)
 
