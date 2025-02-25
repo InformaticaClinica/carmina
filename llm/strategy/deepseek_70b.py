@@ -23,9 +23,6 @@ class Deepseek_70b(LLMStrategy):
 
 
     def generate_prompt(self, model_prompt: dict) -> str:
-        print("1")
         prompt = self._prompt_handler.format_prompt(model_prompt)
-        print("2")
         body = self.create_body(prompt)
-        print("3")
         return self.invoke_model(body)
