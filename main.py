@@ -90,6 +90,7 @@ def anonimized_loop(llm, name_model):
             dataframe_label = second_iteration(metrics_second, text_generated, llm, name_model, filename)
             print("here3")
             metrics_thrid = third_iteration(metrics_thrid, text_generated, dataframe_label, name_model, filename)
+            break
         except Exception as e:
             print(filename)
             print(e)
