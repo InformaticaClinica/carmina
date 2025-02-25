@@ -80,8 +80,11 @@ def anonimized_loop(llm, name_model):
     for filename in sorted(os.listdir(f'{PATH}txt/replaced/')):
         try:
             init_main()
+            print("here")
             metrics, text_generated = first_iteration(metrics, filename, llm, name_model)
+            print("here2")
             dataframe_label = second_iteration(metrics_second, text_generated, llm, name_model, filename)
+            print("here3")
             metrics_thrid = third_iteration(metrics_thrid, text_generated, dataframe_label, name_model, filename)
         except Exception as e:
             print(filename)
