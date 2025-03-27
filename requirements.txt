@@ -4,3 +4,6 @@ spacy
 pandas
 scikit-learn
 psutil
+azure-core
+azure-ai-inference==1.0.0b9
+python-dotenv

@@ -80,7 +80,10 @@ class Metrics:
         self._metrics_data["recall"] = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
     
     def get_f1(self, precision, recall):
-        self._metrics_data["f1"] = 2 * (precision * recall) / (precision + recall)
+        if precision + recall <= 0:
+            self._metrics_data["f1"] = 0
+        else:
+            self._metrics_data["f1"] = 2 * (precision * recall) / (precision + recall)
 
     # TODO: Mover a utils (?) 
     def create_distance_matrix(self, str1, str2):
@@ -217,7 +220,7 @@ class Metrics:
 
     def add_language(self):
         filename = self._metrics_data["filename"].split(".")[0]
-        data = pd.read_csv('./data/carmen/language.tsv', sep='\t', index_col='filename')
+        data = pd.read_csv('./data/carmen/CARMEN1_mappings.tsv', sep='\t', index_col='filename')
         language = data.loc[filename, 'language']
         self._metrics_data["language"] = language
 
