@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: anon_pipeline_app
+    environment:
+      - STRATEGY=${STRATEGY}
+      - MODELS=${MODELS}
+      - INPUT=${INPUT}
+      - OUTPUT_DIR=${OUTPUT_DIR}
+      - METRICS_DIR=${METRICS_DIR}
+    volumes :
+      - .:/app
+    working_dir: /app
+    command: python main.py
+    # networks:
+      # - anon_network
+
+
+  # Base de datos 
+  # db:
+    # image: postgres:latest
+    # container_name: anon_db
+    # environment:
+      # - POSTGRES_USER=admin
+      # - POSTGRES_PASSWORD=admin
+      # - POSTGRES_DB=anon_db
+    # volumes:
+      # - pg_data:/var/lib/postgresql/data
+    # networks:
+      # - anon_network
+
+  # Servidor de métricas 
+  # metrics:
+    # image: grafana/grafana:latest
+    # container_name: metrics_dashboard
+    # environment:
+      # - GF_SECURITY_ADMIN_PASSWORD=admin
+    # ports:
+      # - "3000:3000"
+    # networks:
+      # - anon_network
+
+# volumes:
+  # pg_data:
+
+# networks:
+  # anon_network:
+    # driver: bridge
