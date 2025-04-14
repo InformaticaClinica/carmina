@@ -3,9 +3,8 @@ from typing import List, Dict, Any
 from ..exceptions import DataLoadError
 from ..extractors import (
     extract_labels_from_masked_text,
-    extract_labels_from_identify_text,
-    extract_clean_text_and_labels
-)
+    extract_value_from_masked_text)
+
 from .file_loaders import load_json_file, load_csv_file, load_txt_file
 
 def load_directory(dir_path: str) -> List[Dict[str, Any]]:
@@ -104,6 +103,50 @@ def _load_all_formats(txt_raw_path: str, txt_masked_path: str, txt_identify_path
             'text': original_text,
             'indetify': identify_text,  # Using the spelling from user's request
             'maked_text': masked_text,  # Using the spelling from user's request
+            'labels': labels
+        })
+    
+    return records
+
+def _load_raw_masked_structure(txt_raw_path: str, txt_masked_path: str) -> List[Dict[str, Any]]:
+    """
+    Loads data from raw and masked text directories.
+    
+    Args:
+        txt_raw_path (str): Path to directory with raw texts.
+        txt_masked_path (str): Path to directory with masked texts.
+        
+    Returns:
+        List[Dict[str, Any]]: List of records in the required format.
+    """
+    records = []
+    
+    for filename in sorted(os.listdir(txt_raw_path)):
+        if not filename.endswith('.txt'):
+            continue
+            
+        raw_path = os.path.join(txt_raw_path, filename)
+        masked_path = os.path.join(txt_masked_path, filename)
+        
+        # Skip if masked file doesn't exist
+        if not os.path.exists(masked_path):
+            continue
+            
+        with open(raw_path, 'r', encoding='utf-8') as f_raw:
+            original_text = f_raw.read()
+            
+        with open(masked_path, 'r', encoding='utf-8') as f_masked:
+            masked_text = f_masked.read()
+            
+        # Extract labels from masked text
+        labels = extract_labels_from_masked_text(masked_text)
+        value = extract_value_from_masked_text(masked_text, original_text)
+        print(value)
+        
+        records.append({
+            'id': filename,
+            'text': original_text,
+            'maked_text': masked_text,
             'labels': labels
         })
     
