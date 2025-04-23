@@ -31,7 +31,7 @@ class IdentificationProcessor(BaseProcessor):
             
         try:
             # Call the LLM strategy to extract entities
-            entities = self.llm_strategy.extract_entities(text)
+            entities = self.llm_strategy.identify(text)
             
             return {
                 "entities": entities,

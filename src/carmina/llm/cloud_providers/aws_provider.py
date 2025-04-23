@@ -29,7 +29,7 @@ class AWSProvider(BaseCloudProvider):
         "claude-3-sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
         "claude-3-haiku": "anthropic.claude-3-haiku-20240307-v1:0",
         "claude-3.5-sonnet": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-        "claude-3.7-sonnet": "anthropic.claude-3-7-sonnet-20240711-v1:0",
+        "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         
         # LLama models
         "llama-3-8b": "meta.llama3-8b-instruct-v1:0",
@@ -47,7 +47,10 @@ class AWSProvider(BaseCloudProvider):
             **kwargs: Additional AWS-specific configuration parameters
         """
         self.region = os.environ.get("AWS_REGION") or kwargs.get("region", "us-east-1")
-        self.profile = kwargs.get("profile", None)
+        self.access_key_id = os.environ.get("AWS_ACCESS_KEY_ID") or kwargs.get("access_key_id", None)
+        self.secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY") or kwargs.get("secret_access_key", None)
+        self.session_token = os.environ.get("AWS_SESSION_TOKEN") or kwargs.get("session_token", None)
+        self.profile = os.environ.get("AWS_PROFILE") or kwargs.get("profile", None)
         
         # Initialize clients
         self.session = self._create_session()
@@ -183,13 +186,32 @@ class AWSProvider(BaseCloudProvider):
             
             # Format the request according to the provider's requirements
             if "anthropic" in model_id:
+                # Determinar si es Claude 3.7 o superior
+                is_claude_3_7_plus = "claude-3-7" in model_name.lower() or "claude-3.7" in model_name.lower()
+                
+                messages = input_data.get("messages", [])
+                
                 # Format for Claude models
                 request_body = {
                     "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": inference_params.get("max_tokens", 1000),
-                    "temperature": inference_params.get("temperature", 0.7),
-                    "messages": input_data.get("messages", [])
+                    "max_tokens": int(inference_params.get("max_tokens", 1000)),
+                    "temperature": float(inference_params.get("temperature", 0.7)),
                 }
+                
+                # Diferentes formatos para diferentes versiones de Claude
+                if is_claude_3_7_plus:
+                    # Para Claude 3.7+: system es un parámetro de nivel superior
+                    system_messages = [msg for msg in messages if msg.get("role") == "system"]
+                    user_messages = [msg for msg in messages if msg.get("role") != "system"]
+                    
+                    if system_messages:
+                        request_body["system"] = system_messages[0].get("content", "")
+                    
+                    request_body["messages"] = user_messages
+                else:
+                    # Para Claude versiones anteriores: system es un role dentro de messages
+                    request_body["messages"] = messages
+                    
             elif "meta.llama" in model_id:
                 # Format for Llama models
                 request_body = {
@@ -206,7 +228,7 @@ class AWSProvider(BaseCloudProvider):
                 }
             else:
                 raise ValueError(f"Unsupported model format: {model_id}")
-            
+            logging.debug(f"Request body for {model_id}: {json.dumps(request_body)}")
             # Make the actual API call
             response = self.bedrock_runtime.invoke_model(
                 modelId=model_id,
@@ -218,7 +240,10 @@ class AWSProvider(BaseCloudProvider):
             return response_body
             
         except ClientError as e:
-            logging.error(f"AWS inference error: {str(e)}")
+            error_code = e.response.get('Error', {}).get('Code', '')
+            if error_code == 'ValidationException':
+                logging.error(f"Request validation error: {str(e)}")
+                logging.error(f"Request body was: {json.dumps(request_body)}")
             raise
     
     def batch_process(

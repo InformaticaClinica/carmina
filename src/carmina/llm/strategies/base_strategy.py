@@ -31,10 +31,10 @@ class BaseLLMStrategy(ABC):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.config = kwargs # TODO: Trace and erase
-        self.temperature = kwargs.get("temperature", os.getenv("TEMPERATURE", 1.0))
-        self.max_tokens = kwargs.get("max_tokens", os.getenv("MAX_TOKENS", 1000))
-        self.top_p = kwargs.get("top_p", os.getenv("LLM_TOP_P", 1.0))
-        self.top_k = kwargs.get("top_k", os.getenv("LLM_TOP_K", 0))
+        self.temperature = float(kwargs.get("temperature", os.getenv("TEMPERATURE", 1.0)))
+        self.max_tokens = int(kwargs.get("max_tokens", os.getenv("MAX_TOKENS", 1000)))
+        self.top_p = float(kwargs.get("top_p", os.getenv("LLM_TOP_P", 1.0)))
+        self.top_k = float(kwargs.get("top_k", os.getenv("LLM_TOP_K", 0)))
 
     
     @abstractmethod

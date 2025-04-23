@@ -1,4 +1,5 @@
 # Librerías principales para el proyecto
+dotenv==0.9.9
 python-dotenv==1.0.0       # Para cargar las variables de entorno desde .env
 requests==2.28.1           # Para realizar solicitudes HTTP a los modelos de LLM si es necesario
 openai==0.27.0             # Para interactuar con la API de OpenAI 
@@ -7,3 +8,6 @@ deepseek==1.0.0            # Si usas DeepSeek como uno de los modelos LLM
 pandas==2.2.3              # Si estás utilizando pandas para manejar el dataset
 pytest==7.2.2              # Para pruebas unitarias y evaluación
 sphinx==5.0.2              # Para generar documentación automática
+boto3==1.38.0            # Si estás utilizando AWS para almacenamiento o computación
+spacy==3.7.6               # Para procesamiento de lenguaje natural
+scikit-learn==1.5.1         # Para modelos de machine learning
