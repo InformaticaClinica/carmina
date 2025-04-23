@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict, Any
 
-from data_sources.exceptions import DataLoadError
+from src.carmina.data_sources.exceptions import DataLoadError
 from .loaders import load_directory, load_json_file, load_csv_file, load_txt_file
 
 def load_dataset(input_path: str) -> List[Dict[str, Any]]:

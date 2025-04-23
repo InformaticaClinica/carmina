@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, List
 import logging
 from botocore.exceptions import ClientError
 
-from llm.cloud_providers.base_provider import BaseCloudProvider
+from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
 class AWSProvider(BaseCloudProvider):
     """

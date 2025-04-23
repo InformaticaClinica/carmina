@@ -2,10 +2,10 @@ import os
 #import anthropic
 import logging
 
-from llm.cloud_providers.base_provider import BaseCloudProvider
-from llm.strategies.base_strategy import BaseLLMStrategy
-from llm.model_config import MODEL_CONFIGS
-from llm.utils.prompt_loader import load_system_prompt
+from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
+from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
+from src.carmina.llm.model_config import MODEL_CONFIGS
+from src.carmina.llm.utils.prompt_loader import load_system_prompt
 
 class AnthropicStrategy(BaseLLMStrategy):
     """Implementation for Anthropic Claude models."""
@@ -49,14 +49,6 @@ class AnthropicStrategy(BaseLLMStrategy):
         Returns:
             Text with identified sensitive information
         """
-        # self.temperature
-        # self.max_tokens
-        # self.top_p
-        # self.top_k
-        # self.stop
-        # self.model_name
-        # self.provider_name
-        # self.anonymization_mode
         system_prompt = load_system_prompt("identify")
 
         messages = [
@@ -97,7 +89,8 @@ class AnthropicStrategy(BaseLLMStrategy):
         pass
 
     def extract_entities(self, text, **kwargs):
-        pass
+        response = self.identify(text)
+        return response
 
     def process_for_anonymization(self, text, mode):
         pass

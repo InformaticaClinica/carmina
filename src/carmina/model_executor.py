@@ -1,10 +1,10 @@
 import os
 import json
-from data_sources.data_loader import load_dataset
-#from pipeline.anon_pipeline import AnonymizationPipeline
-from llm.factory import LLMFactory
-from metrics.recorder import MetricsRecorder
-#from metrics.timer import measure_time
+from src.carmina.data_sources.data_loader import load_dataset
+from src.carmina.pipeline.anon_pipeline import AnonymizationPipeline
+from src.carmina.llm.factory import LLMFactory
+from src.carmina.metrics.recorder import MetricsRecorder
+from src.carmina.metrics.timer import measure_time
 #from metrics.evaluator import evaluate_identification, evaluate_substitution
 
 class ModelExecutor:
@@ -76,15 +76,15 @@ class ModelExecutor:
 
         pipeline = AnonymizationPipeline(llm)
 
-        # with measure_time("anon_pipeline_time", recorder):
-        #     anonymized_records = pipeline.run(records)
+        with measure_time("anon_pipeline_time", recorder):
+            anonymized_records = pipeline.run(records)
 
-        # output_path = os.path.join(self.output_dir, f"output_{self.model_name}.json")
-        # with open(output_path, "w", encoding="utf-8") as f:
-        #     json.dump(anonymized_records, f, indent=2)
+        output_path = os.path.join(self.output_dir, f"output_{self.model_name}.json")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(anonymized_records, f, indent=2)
 
-        # y_true = [r["labels"] for r in records]
-        # y_pred = [r["predicted_labels"] for r in anonymized_records]
+        y_true = [r["labels"] for r in records]
+        y_pred = [r["predicted_labels"] for r in anonymized_records]
 
         # recorder.record_all({
         #     **evaluate_identification(y_true, y_pred),

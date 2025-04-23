@@ -8,12 +8,12 @@ different models and deployment environments.
 
 from typing import Dict, Optional, Any, Type
 
-from llm.strategies.base_strategy import BaseLLMStrategy
+from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
+from src.carmina.llm.cloud_providers.cloud_provider_factory import CloudProviderFactory
+from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
 #from llm.strategies.openai_strategy import OpenAIStrategy
-from llm.strategies.anthropic_strategy import AnthropicStrategy
 #from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 #from llm.strategies.mock_strategy import MockStrategy
-from llm.cloud_providers.cloud_provider_factory import CloudProviderFactory
 
 class LLMFactory:
     """Factory for creating LLM strategy instances with cloud provider integration."""

@@ -2,7 +2,7 @@
 Main entry point for the Carmina application.
 """
 
-from core.benchmark_runner import BenchmarkRunner
+from src.carmina.tools.benchmark_runner import BenchmarkRunner
 from utils.logging_config import setup_logging
 
 # Entry point for the application

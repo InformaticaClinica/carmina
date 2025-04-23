@@ -8,11 +8,11 @@ for seamless switching between different models and deployment environments.
 from typing import Dict, Optional, Any, Type
 
 # from llm.strategies.openai_strategy import OpenAIStrategy
-from llm.strategies.anthropic_strategy import AnthropicStrategy
+from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
+from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
+from src.carmina.llm.cloud_providers.aws_provider import AWSProvider
 # from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 # from llm.strategies.mock_strategy import MockStrategy
-from llm.cloud_providers.base_provider import BaseCloudProvider
-from llm.cloud_providers.aws_provider import AWSProvider
 # from llm.cloud_providers.azure_provider import AzureProvider
 # from llm.cloud_providers.local_provider import LocalProvider
 

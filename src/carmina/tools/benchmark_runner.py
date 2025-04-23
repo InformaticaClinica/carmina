@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
-from core.model_executor import ModelExecutor
-from core.benchmark_summary import BenchmarkSummary
+from src.carmina.model_executor import ModelExecutor
+from src.carmina.tools.benchmark_summary import BenchmarkSummary
 
 class BenchmarkRunner:
     """

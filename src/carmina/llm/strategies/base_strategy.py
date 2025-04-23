@@ -10,7 +10,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 
-from llm.cloud_providers.base_provider import BaseCloudProvider
+from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
 class BaseLLMStrategy(ABC):
     """
