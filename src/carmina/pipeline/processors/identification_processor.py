@@ -5,6 +5,7 @@ This processor identifies sensitive information in text using the LLM.
 """
 
 import logging
+import re
 from typing import Dict, Any, List
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
 
@@ -31,13 +32,28 @@ class IdentificationProcessor(BaseProcessor):
             
         try:
             # Call the LLM strategy to extract entities
-            entities = self.llm_strategy.identify(text)
-            
+            text_identify = self.llm_strategy.identify(text)
+            entities = self.get_brackets_entities(text_identify)
+            logging.info(f"Identified entities: {entities}")
             return {
+                "anonymized_text": text_identify,
                 "entities": entities,
-                "count": len(entities)
             }
             
         except Exception as e:
             logging.error(f"Error in identification process: {e}")
             return {"entities": {}, "error": str(e)}
+    
+    def get_brackets_entities(self, text: str) -> List[str]:
+        """
+        Extracts entities enclosed in brackets [**...] from the text.
+
+        Args:
+            text (str): The input text.
+
+        Returns:
+            list: A list of extracted entities.
+        """
+        # Expresión regular para capturar texto entre [**...**]
+        pattern = r'\[\*\*(.*?)\*\*\]'
+        return re.findall(pattern, text)

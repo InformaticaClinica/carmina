@@ -36,7 +36,9 @@ class AnonymizationPipeline:
         self.identification = IdentificationProcessor(llm_strategy)
         
         # Initialize the right processor based on anonymization mode
-        if self.anonymization_mode == "label":
+        if self.anonymization_mode == "identify":
+            self.anonymizer = None
+        elif self.anonymization_mode == "label":
             self.anonymizer = LabelingProcessor(llm_strategy)
         elif self.anonymization_mode == "substitute":
             self.anonymizer = SubstitutionProcessor(llm_strategy)
@@ -69,12 +71,15 @@ class AnonymizationPipeline:
                 
                 # Step 2: Run identification to find sensitive entities
                 identified_result = self.identification.process(text)
-                
+                   
                 # Step 3: Run anonymization (labeling or substitution)
-                anonymized_result = self.anonymizer.process(
-                    text, 
-                    entities=identified_result.get('entities', {})
-                )
+                anonymized_result = self.anonymize(text=text, identified_result=identified_result)
+                
+                
+                # anonymized_result = self.anonymizer.process(
+                #     text, 
+                #     entities=identified_result.get('entities', {})
+                # )
                 
                 # Step 4: Combine all results into the output
                 output = {
@@ -91,3 +96,18 @@ class AnonymizationPipeline:
                 results.append({**record, "error": str(e)})
         
         return results
+
+    def anonymize(self, text: str, identified_result:Dict[List, Any]) -> str:
+        """
+        Anonymize the input text using the configured LLM strategy.
+        
+        Args:
+            text: The input text to anonymize
+            
+        Returns:
+            Anonymized text
+        """
+        if self.anonymizer is not None:
+            return self.anonymizer.process(text)
+        else:
+            return identified_result

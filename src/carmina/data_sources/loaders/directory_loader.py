@@ -101,7 +101,7 @@ def _load_all_formats(txt_raw_path: str, txt_masked_path: str, txt_identify_path
         records.append({
             'id': filename,
             'text': original_text,
-            'indetify': identify_text,  # Using the spelling from user's request
+            'identify': identify_text,  # Using the spelling from user's request
             'maked_text': masked_text,  # Using the spelling from user's request
             'labels': labels
         })

@@ -72,53 +72,6 @@ class AWSProvider(BaseCloudProvider):
         if self.profile:
             return boto3.Session(profile_name=self.profile, region_name=self.region)
         return boto3.Session(region_name=self.region)
-    
-    def initialize_environment(self):
-        """
-        Configure the AWS environment with necessary credentials and permissions.
-        
-        This method ensures that AWS environment variables are properly set up
-        and that the provider has the necessary access to required services.
-        
-        Returns:
-            True if successfully initialized, False otherwise
-        """
-        try:
-            # Verify credentials
-            sts = self.session.client("sts")
-            sts.get_caller_identity()
-            
-            # Verify access to Bedrock (for all models)
-            try:
-                self.bedrock_runtime.list_foundation_models()
-            except (ClientError, AttributeError) as e:
-                # Alternative check if list_foundation_models is not available
-                # Try to get model info for a known model
-                model_id = next(iter(self._bedrock_model_ids.values()))
-                self.bedrock_runtime.get_model_invoke_config(modelId=model_id)
-            
-            self._is_initialized = True
-            return True
-        except ClientError as e:
-            logging.error(f"AWS initialization error: {str(e)}")
-            return False
-    
-    def get_credentials(self) -> Dict[str, str]:
-        """
-        Retrieve current AWS credentials for the session.
-        
-        Returns:
-            Dictionary containing AWS credential information
-        """
-        credentials = self.session.get_credentials()
-        if credentials:
-            return {
-                "aws_access_key_id": credentials.access_key,
-                "aws_secret_access_key": "**redacted**",  # For security
-                "region": self.region,
-                "initialized": self._is_initialized
-            }
-        return {"error": "No credentials available", "initialized": False}
         
     def get_name(self) -> str:
         """
@@ -161,7 +114,7 @@ class AWSProvider(BaseCloudProvider):
     def run_inference(
         self,
         model_name: str,
-        input_data: Dict[str, Any],
+        messages: Dict[str, Any],
         inference_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
@@ -169,7 +122,7 @@ class AWSProvider(BaseCloudProvider):
 
         Args:
             model_name: Name of the model to use
-            input_data: Input data for the model
+            messages: Input data for the model
             inference_params: Additional parameters for inference
             
         Returns:
@@ -189,7 +142,7 @@ class AWSProvider(BaseCloudProvider):
                 # Determinar si es Claude 3.7 o superior
                 is_claude_3_7_plus = "claude-3-7" in model_name.lower() or "claude-3.7" in model_name.lower()
                 
-                messages = input_data.get("messages", [])
+                messages = messages.get("messages", [])
                 
                 # Format for Claude models
                 request_body = {
@@ -215,14 +168,14 @@ class AWSProvider(BaseCloudProvider):
             elif "meta.llama" in model_id:
                 # Format for Llama models
                 request_body = {
-                    "prompt": input_data.get("prompt", ""),
+                    "prompt": messages.get("prompt", ""),
                     "max_gen_len": inference_params.get("max_tokens", 512),
                     "temperature": inference_params.get("temperature", 0.7),
                 }
             elif "mistral" in model_id:
                 # Format for Mistral models
                 request_body = {
-                    "prompt": input_data.get("prompt", ""),
+                    "prompt": messages.get("prompt", ""),
                     "max_tokens": inference_params.get("max_tokens", 512),
                     "temperature": inference_params.get("temperature", 0.7),
                 }
@@ -264,9 +217,9 @@ class AWSProvider(BaseCloudProvider):
             List of model responses
         """
         results = []
-        for input_data in batch_inputs:
+        for messages in batch_inputs:
             try:
-                result = self.run_inference(model_name, input_data, inference_params)
+                result = self.run_inference(model_name, messages, inference_params)
                 results.append(result)
             except Exception as e:
                 # Log error and continue with other items

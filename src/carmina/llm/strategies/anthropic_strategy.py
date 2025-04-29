@@ -1,11 +1,11 @@
 import os
-#import anthropic
 import logging
 
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.model_config import MODEL_CONFIGS
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
+
 
 class AnthropicStrategy(BaseLLMStrategy):
     """Implementation for Anthropic Claude models."""
@@ -87,10 +87,6 @@ class AnthropicStrategy(BaseLLMStrategy):
 
     def process_for_anonymization(self, text, mode):
         pass
-
-    def extract_entities(self, text, **kwargs):
-        response = self.identify(text)
-        return response
 
     def process_for_anonymization(self, text, mode):
         pass

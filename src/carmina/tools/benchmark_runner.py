@@ -24,6 +24,7 @@ class BenchmarkRunner:
         self.input_path = os.getenv("INPUT_DIR", "data/input.json")
         self.output_dir = os.getenv("OUTPUT_DIR", "data/outputs/")
         self.metrics_dir = os.getenv("METRICS_DIR", "metrics/")
+        self.debug = os.getenv("DEBUG", "false").lower()
 
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.metrics_dir, exist_ok=True)

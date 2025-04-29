@@ -1,58 +1,58 @@
 import re
 
-def extract_labels(texto_anonimizado, texto_original, tamano_contexto=30):
+def extract_labels(anonymized_text, original_text, context_size=30):
     """
-    Encuentra las sustituciones entre un texto anonimizado y el texto original.
+    Finds substitutions between an anonymized text and the original text.
     
     Args:
-        texto_anonimizado: Texto con etiquetas en formato [ETIQUETA]
-        texto_original: Texto original sin anonimizar
-        tamano_contexto: Cantidad de caracteres de contexto a considerar (default: 30)
+        anonymized_text: Text with labels in the format [LABEL]
+        original_text: Original text without anonymization
+        context_size: Number of context characters to consider (default: 30)
         
     Returns:
-        Diccionario con las etiquetas y sus valores originales
+        Dictionary with the labels and their original values
     """
-    # Buscar todas las etiquetas en formato [**ETIQUETA**]
-    etiquetas = re.findall(r'\[\*\*([A-Z_]+)\*\*\]', texto_anonimizado)
+    # Find all labels in the format [**LABEL**]
+    labels = re.findall(r'\[\*\*([A-Z_]+)\*\*\]', anonymized_text)
     
-    # Diccionario para almacenar los resultados
-    resultado = {}
+    # Dictionary to store the results
+    result = {}
     
-    # Para cada etiqueta encontrada
-    for etiqueta in etiquetas:
-        # Buscar todas las ocurrencias de esta etiqueta
-        for match in re.finditer(r'\[' + etiqueta + r'\]', texto_anonimizado):
-            # Obtener posición de la etiqueta
+    # For each label found
+    for label in labels:
+        # Find all occurrences of this label
+        for match in re.finditer(r'\[' + label + r'\]', anonymized_text):
+            # Get the position of the label
             pos = match.start()
-            etiqueta_completa = match.group(0)  # [ETIQUETA] completa
+            full_label = match.group(0)  # Complete [LABEL]
             
-            # Extraer contexto alrededor de la etiqueta
-            contexto_antes = texto_anonimizado[max(0, pos-tamano_contexto):pos]
-            contexto_despues = texto_anonimizado[pos+len(etiqueta_completa):min(len(texto_anonimizado), pos+len(etiqueta_completa)+tamano_contexto)]
+            # Extract context around the label
+            context_before = anonymized_text[max(0, pos-context_size):pos]
+            context_after = anonymized_text[pos+len(full_label):min(len(anonymized_text), pos+len(full_label)+context_size)]
             
-            # Escapar caracteres especiales en los contextos
-            contexto_antes_escaped = re.escape(contexto_antes)
-            contexto_despues_escaped = re.escape(contexto_despues)
+            # Escape special characters in the contexts
+            context_before_escaped = re.escape(context_before)
+            context_after_escaped = re.escape(context_after)
             
             try:
-                # Construir patrón para buscar en el texto original
-                patron = f"{contexto_antes_escaped}(.*?){contexto_despues_escaped}"
+                # Build pattern to search in the original text
+                pattern = f"{context_before_escaped}(.*?){context_after_escaped}"
                 
-                # Buscar en el texto original
-                coincidencia = re.search(patron, texto_original)
-                if coincidencia:
-                    valor = coincidencia.group(1).strip()
+                # Search in the original text
+                match_original = re.search(pattern, original_text)
+                if match_original:
+                    value = match_original.group(1).strip()
                     
-                    # Guardar el resultado
-                    if etiqueta not in resultado:
-                        resultado[etiqueta] = valor
-                    # Si ya existe pero es diferente, convertir a lista
-                    elif isinstance(resultado[etiqueta], str) and resultado[etiqueta] != valor:
-                        resultado[etiqueta] = [resultado[etiqueta], valor]
-                    # Si ya es una lista y el valor no está en ella, agregarlo
-                    elif isinstance(resultado[etiqueta], list) and valor not in resultado[etiqueta]:
-                        resultado[etiqueta].append(valor)
+                    # Save the result
+                    if label not in result:
+                        result[label] = value
+                    # If it already exists but is different, convert to list
+                    elif isinstance(result[label], str) and result[label] != value:
+                        result[label] = [result[label], value]
+                    # If it's already a list and the value is not in it, add it
+                    elif isinstance(result[label], list) and value not in result[label]:
+                        result[label].append(value)
             except re.error as e:
-                print(f"Error en la expresión regular para la etiqueta {etiqueta}: {e}")
+                print(f"Error in the regular expression for label {label}: {e}")
     
-    return resultado
+    return result

@@ -11,6 +11,8 @@ from typing import Dict, Optional, Any, Type
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.cloud_providers.cloud_provider_factory import CloudProviderFactory
 from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
+from src.carmina.llm.strategies.deepseek_strategy import DeepSeekStrategy
+from src.carmina.llm.strategies.gemini_strategy import GeminiStrategy
 #from llm.strategies.openai_strategy import OpenAIStrategy
 #from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 #from llm.strategies.mock_strategy import MockStrategy
@@ -23,6 +25,8 @@ class LLMFactory:
         # "gpt": OpenAIStrategy,
         "claude": AnthropicStrategy,
         "anthropic": AnthropicStrategy,
+        "deepseek": DeepSeekStrategy,
+        "gemini": GeminiStrategy,
         # "llama": HuggingFaceStrategy,
         # "mistral": HuggingFaceStrategy,
         # "mock": MockStrategy,

@@ -122,21 +122,6 @@ class BaseLLMStrategy(ABC):
         pass
 
     @abstractmethod
-    def extract_entities(self, text: str, **kwargs) -> Dict[str, str]:
-        """
-        Extract and classify entities from the input text.
-
-        Args:
-            text: Input text to process
-            **kwargs: Additional extraction parameters
-
-        Returns:
-            Dictionary with entity values as keys and entity types as values
-            Example: {"Juan": "NAME", "12-1-23": "DATE"}
-        """
-        pass
-
-    @abstractmethod
     def process_for_anonymization(self, text: str, mode: str) -> Dict[str, Any]:
         """
         Process text specifically for anonymization tasks.

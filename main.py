@@ -3,7 +3,7 @@ Main entry point for the Carmina application.
 """
 
 from src.carmina.tools.benchmark_runner import BenchmarkRunner
-from utils.logging_config import setup_logging
+from src.carmina.utils.logging_config import setup_logging
 
 # Entry point for the application
 if __name__ == "__main__":
