@@ -75,12 +75,6 @@ class AnonymizationPipeline:
                 # Step 3: Run anonymization (labeling or substitution)
                 anonymized_result = self.anonymize(text=text, identified_result=identified_result)
                 
-                
-                # anonymized_result = self.anonymizer.process(
-                #     text, 
-                #     entities=identified_result.get('entities', {})
-                # )
-                
                 # Step 4: Combine all results into the output
                 output = {
                     **record,
