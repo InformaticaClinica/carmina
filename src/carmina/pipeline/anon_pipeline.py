@@ -82,7 +82,6 @@ class AnonymizationPipeline:
                     "entities": anonymized_result.get('entities', {}),
                     "predicted_labels": anonymized_result.get('labels', []),
                 }
-                
                 results.append(output)
                 
             except Exception as e:

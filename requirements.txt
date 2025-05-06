@@ -2,7 +2,7 @@
 dotenv==0.9.9
 python-dotenv==1.0.0       # Para cargar las variables de entorno desde .env
 requests==2.28.1           # Para realizar solicitudes HTTP a los modelos de LLM si es necesario
-openai==0.27.0             # Para interactuar con la API de OpenAI 
+openai==1.77.0             # Para interactuar con la API de OpenAI 
 llama-index==0.5.6         # Si utilizas Llama y la librería llama-index
 deepseek==1.0.0            # Si usas DeepSeek como uno de los modelos LLM 
 pandas==2.2.3              # Si estás utilizando pandas para manejar el dataset

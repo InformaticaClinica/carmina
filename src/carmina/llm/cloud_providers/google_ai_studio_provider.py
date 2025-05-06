@@ -4,8 +4,9 @@ import logging
 from google import genai
 from google.genai import types
 from typing import Optional
+from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
-class GoogleAIStudioProvider:
+class GoogleAIStudioProvider(BaseCloudProvider):
     """
     Google AI Studio provider for running inference on models.
     

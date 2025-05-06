@@ -13,7 +13,7 @@ from src.carmina.llm.cloud_providers.cloud_provider_factory import CloudProvider
 from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
 from src.carmina.llm.strategies.deepseek_strategy import DeepSeekStrategy
 from src.carmina.llm.strategies.gemini_strategy import GeminiStrategy
-#from llm.strategies.openai_strategy import OpenAIStrategy
+from src.carmina.llm.strategies.openai_strategy import OpenAIStrategy
 #from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 #from llm.strategies.mock_strategy import MockStrategy
 
@@ -22,7 +22,7 @@ class LLMFactory:
 
     # Mapping of model name patterns to strategy classes
     _strategies: Dict[str, Type[BaseLLMStrategy]] = {
-        # "gpt": OpenAIStrategy,
+        "gpt": OpenAIStrategy,
         "claude": AnthropicStrategy,
         "anthropic": AnthropicStrategy,
         "deepseek": DeepSeekStrategy,

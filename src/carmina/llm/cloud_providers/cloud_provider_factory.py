@@ -13,6 +13,7 @@ from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.cloud_providers.aws_provider import AWSProvider
 from src.carmina.llm.cloud_providers.azure_provider import AzureProvider
 from src.carmina.llm.cloud_providers.google_ai_studio_provider import GoogleAIStudioProvider
+from src.carmina.llm.cloud_providers.openai_provider import OpenAIProvider
 # from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 # from llm.strategies.mock_strategy import MockStrategy
 # from llm.cloud_providers.local_provider import LocalProvider
@@ -25,6 +26,7 @@ class CloudProviderFactory:
         "aws": AWSProvider,
         "azure": AzureProvider,
         "google_ai_studio": GoogleAIStudioProvider,
+        "openai": OpenAIProvider
         # "local": LocalProvider,
     }
 
