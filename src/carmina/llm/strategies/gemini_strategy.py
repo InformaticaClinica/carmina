@@ -22,6 +22,8 @@ class GeminiStrategy(BaseLLMStrategy):
         self.anonymization_mode = os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode", "label")
         self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature", 0.7)
         self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500)
+        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty", 0.0)
+        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty", 0.0)
         self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p", 1.0)
 
     def identify(self, text, **kwargs):
@@ -45,6 +47,24 @@ class GeminiStrategy(BaseLLMStrategy):
                 messages=messages,
                 **inference_params
             )
+            return response
+        elif self.provider_name == "local":
+            if "gemma" not in self.model_name.lower():
+                raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")
+            # LocalProvider just works with gemma models
+
+            response = self.cloud_provider.run_inference(
+                model_id=self.model_name,
+                messages=messages,
+                inference_params={
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_tokens,
+                    "top_p": self.top_p,
+                    "frequency_penalty": self.frequency_penalty,
+                    "presence_penalty": self.presence_penalty
+                }
+            )
+            # LocalProvider already extracts the message content, so just return it
             return response
         else:
             raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")

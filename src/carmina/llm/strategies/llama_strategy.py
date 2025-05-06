@@ -1,4 +1,3 @@
-import openai
 import os
 from typing import List, Dict, Any
 
@@ -7,17 +6,14 @@ from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
 from src.carmina.llm.model_config import MODEL_CONFIGS
 
-class OpenAIStrategy(BaseLLMStrategy):
+class LlamaStrategy(BaseLLMStrategy):
     """
-    Implementation for OpenAI models.
+    Implementation for Llama models.
     """
     # Dictionary to map model names to their context windows
     _context_windows = {
-        "gpt-3.5-turbo": 4096,
-        "gpt-4": 8192,
-        "gpt-4-32k": 32768,
-        "gpt-4-turbo": 8192,
-        "gpt-4-turbo-32k": 32768,
+        "llama-3.2-1b": 8192,
+        "llama-3.2-3b": 8192,
     }
 
     def __init__(self, model_name, cloud_provider, **kwargs):
@@ -33,14 +29,14 @@ class OpenAIStrategy(BaseLLMStrategy):
         self.provider_name = self.cloud_provider.get_name()
     
     def identify(self, text: str, **kwargs) -> str:
-        #TODO: Adapter design pattern for OpenAI
         system_prompt = load_system_prompt("identify")
         messages = [
-            {"role": "developer", "content": system_prompt},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": text}
         ]
-        if self.provider_name == "openai":
-            self.cloud_provider.run_inference(
+        
+        if self.provider_name == "local":
+            response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
                 inference_params={
@@ -51,13 +47,16 @@ class OpenAIStrategy(BaseLLMStrategy):
                     "presence_penalty": self.presence_penalty
                 }
             )
-            
+            # LocalProvider already extracts the message content, so just return it
+            return response
+        
+        return ""
 
     def batch_identify(self, texts: List[str], **kwargs) -> List[str]:
         pass
 
     def get_context_window(self) -> int:
-        pass
+        return self._context_windows.get(self.model_name, 4096)
 
     def count_tokens(self, text: str) -> int:
         pass

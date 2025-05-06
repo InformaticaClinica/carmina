@@ -12,9 +12,7 @@ class AnthropicStrategy(BaseLLMStrategy):
     
     # Dictionary to map model names to their context windows
     _context_windows = {
-        "claude-3-opus": 200000,
-        "claude-3-sonnet": 180000,
-        "claude-3-haiku": 150000,
+
         "claude-3.5-sonnet": 200000,
         "claude-3.7-sonnet": 220000,
     }
