@@ -69,15 +69,14 @@ class LocalProvider(BaseCloudProvider):
         
         # Extract inference parameters
         inference_params = kwargs.get('inference_params', {})
-        
-        # Prepare the request payload
+
         payload = {
             "model": ollama_model,
             "messages": messages,
             "stream": False,
-            "temperature": inference_params.get("temperature", 1.0),
-            "num_predict": inference_params.get("max_tokens", 2500),
-            "top_p": inference_params.get("top_p", 1.0),
+            "temperature": inference_params.get("temperature"),
+            "num_predict": inference_params.get("max_tokens"),
+            "top_p": inference_params.get("top_p"),
             "top_k": 0
         }
         

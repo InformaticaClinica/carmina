@@ -64,7 +64,7 @@ class AnthropicStrategy(BaseLLMStrategy):
             # Call the cloud provider's run_inference method
             response = self.cloud_provider.run_inference(
                 model_name=self.model_name,
-                input_data=input_data,
+                messages=input_data,
                 inference_params=inference_params
             )
             

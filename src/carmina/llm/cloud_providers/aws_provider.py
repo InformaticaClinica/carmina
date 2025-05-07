@@ -115,7 +115,7 @@ class AWSProvider(BaseCloudProvider):
         self,
         model_name: str,
         messages: Dict[str, Any],
-        inference_params: Optional[Dict[str, Any]] = None
+        **kwargs
     ) -> Dict[str, Any]:
         """
         Execute inference using AWS Bedrock.
@@ -123,7 +123,7 @@ class AWSProvider(BaseCloudProvider):
         Args:
             model_name: Name of the model to use
             messages: Input data for the model
-            inference_params: Additional parameters for inference
+            **kwargs: Additional parameters for inference
             
         Returns:
             Model response as a dictionary
@@ -132,7 +132,7 @@ class AWSProvider(BaseCloudProvider):
             ValueError: If the model or request is invalid
             ClientError: If AWS returns an error
         """
-        inference_params = inference_params or {}
+        inference_params = kwargs
         
         try:
             model_id = self.get_bedrock_model_id(model_name)
