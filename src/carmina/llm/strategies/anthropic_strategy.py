@@ -6,7 +6,6 @@ from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.model_config import MODEL_CONFIGS
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
 
-
 class AnthropicStrategy(BaseLLMStrategy):
     """Implementation for Anthropic Claude models."""
     
