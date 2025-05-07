@@ -102,7 +102,7 @@ def _load_all_formats(txt_raw_path: str, txt_masked_path: str, txt_identify_path
             'id': filename,
             'text': original_text,
             'identify': identify_text,  # Using the spelling from user's request
-            'maked_text': masked_text,  # Using the spelling from user's request
+            'masked_text': masked_text,  # Using the spelling from user's request
             'labels': labels
         })
     
@@ -146,7 +146,7 @@ def _load_raw_masked_structure(txt_raw_path: str, txt_masked_path: str) -> List[
         records.append({
             'id': filename,
             'text': original_text,
-            'maked_text': masked_text,
+            'masked_text': masked_text,
             'labels': labels
         })
     
