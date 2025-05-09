@@ -30,21 +30,23 @@ class LocalProvider(BaseCloudProvider):
         "qwen-3-1.7b": "qwen3:1.7b"
     }
     
-    def __init__(self, **kwargs):
+    def __init__(self, name="local", **kwargs):
         """
         Initialize the LocalProvider with Ollama endpoint.
         """
-        super().__init__(provider_name="local", **kwargs)
-        self.base_url = os.environ.get("OLLAMA_BASE_URL")
+        super().__init__(name = name, **kwargs)
+        self.base_url = os.environ.get("OLLAMA_BASE_URL") or kwargs.get("base_url")
         self.api_endpoint = f"{self.base_url}/api/chat"
         logging.info(f"LocalProvider initialized with endpoint {self.base_url}")
-        
+    
+    def connect(self):
         # Test connection to Ollama
         try:
             response = requests.get(f"{self.base_url}/api/version")
             if response.status_code == 200:
                 version = response.json().get('version', 'unknown')
                 logging.info(f"Connected to Ollama version {version}")
+                return f"Connected to Ollama version"
             else:
                 logging.warning(f"Could not connect to Ollama: {response.status_code}")
         except Exception as e:

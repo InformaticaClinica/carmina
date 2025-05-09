@@ -18,15 +18,6 @@ class LlamaStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name, cloud_provider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
-        self.anonymization_mode = os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode", "label")
-        self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature", 0.7)
-        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500)
-        self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p", 1.0)
-        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty", 0.0)
-        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty", 0.0)
-        self.model_name = model_name
-        self.cloud_provider = cloud_provider
-        self.provider_name = self.cloud_provider.get_name()
     
     def identify(self, text: str, **kwargs) -> str:
         system_prompt = load_system_prompt("identify")
@@ -34,8 +25,7 @@ class LlamaStrategy(BaseLLMStrategy):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text}
         ]
-        
-        if self.provider_name == "local":
+        if self.provider_name == "local" or self.provider_name == "mock":
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
@@ -49,8 +39,8 @@ class LlamaStrategy(BaseLLMStrategy):
             )
             # LocalProvider already extracts the message content, so just return it
             return response
-        
-        return ""
+        else:
+            raise ValueError(f"Unsupported {self.provider_name} provider type for identification")
 
     def batch_identify(self, texts: List[str], **kwargs) -> List[str]:
         pass

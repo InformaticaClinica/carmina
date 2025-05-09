@@ -1,15 +1,17 @@
 import os
+from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
+from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
+from src.carmina.llm.cloud_providers.mock_provider import MockProvider
 
-class MockLLMStrategy:
-    def __init__(self, model_name: str, cloud_provider: str, **kwargs):
-        super().__init__(model_name, cloud_provider, **kwargs)
-        self.provider_name = self.cloud_provider.get_name()
-        self.anonymization_mode =  os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode")
-        self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature")
-        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens")
-        self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p")
-        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty")
-        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty")
+class MockLLMStrategy(BaseLLMStrategy):
+    """
+    Mock LLM strategy for testing purposes.
+    This class simulates the behavior of a real LLM strategy without
+    requiring an actual model or cloud provider.
+    """
+    def __init__(self, model_name: str="MockLLMStrategy", cloud_provider: BaseCloudProvider = None, **kwargs):
+        cloud_provider = MockProvider()
+        super().__init__(model_name=model_name, cloud_provider=cloud_provider, **kwargs)
 
     def get_context_window(self) -> int:
         """

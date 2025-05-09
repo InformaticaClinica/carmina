@@ -30,13 +30,24 @@ class BaseLLMStrategy(ABC):
         """
         self.model_name = model_name
         self.cloud_provider = cloud_provider
-        self.config = kwargs # TODO: Trace and erase
-        self.temperature = float(kwargs.get("temperature", os.getenv("TEMPERATURE", 1.0)))
-        self.max_tokens = int(kwargs.get("max_tokens", os.getenv("MAX_TOKENS", 1000)))
-        self.top_p = float(kwargs.get("top_p", os.getenv("LLM_TOP_P", 1.0)))
-        self.top_k = float(kwargs.get("top_k", os.getenv("LLM_TOP_K", 0)))
-
+        self.provider_name = self.cloud_provider.get_name()
+        self.anonymization_mode =  os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode")
+        self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature")
+        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens")
+        self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p")
+        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty")
+        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty")
     
+
+    def set_anonymization_mode(self, mode: str):
+        """
+        Set the anonymization mode for this model.
+        
+        Args:
+            mode: Anonymization mode to set (e.g., 'label', 'substitute')
+        """
+        self.anonymization_mode = mode
+
     @abstractmethod
     def identify(self, text: str, **kwargs) -> str:
         """

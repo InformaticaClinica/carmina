@@ -25,27 +25,24 @@ class AWSProvider(BaseCloudProvider):
     # Model ID mapping for AWS Bedrock models
     _bedrock_model_ids = {
         # Anthropic Claude models
-        "claude-3-opus": "anthropic.claude-3-opus-20240229-v1:0",
-        "claude-3-sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
-        "claude-3-haiku": "anthropic.claude-3-haiku-20240307-v1:0",
-        "claude-3.5-sonnet": "anthropic.claude-3-5-sonnet-20240620-v1:0",
         "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         
         # LLama models
-        "llama-3-8b": "meta.llama3-8b-instruct-v1:0",
-        "llama-3-70b": "meta.llama3-70b-instruct-v1:0",
+        "llama-3-8b": "",
+        "llama-3-70b": "",
         
         # Other models
-        "mistral-7b": "mistral.mistral-7b-instruct-v0:2",
+        "mistral-7b": "",
     }
     
-    def __init__(self, **kwargs):
+    def __init__(self, name:str = "aws", **kwargs):
         """
         Initialize the AWS provider with appropriate credentials and configuration.
         
         Args:
             **kwargs: Additional AWS-specific configuration parameters
         """
+        super().__init__(name=name, **kwargs)
         self.region = os.environ.get("AWS_REGION") or kwargs.get("region", "us-east-1")
         self.access_key_id = os.environ.get("AWS_ACCESS_KEY_ID") or kwargs.get("access_key_id", None)
         self.secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY") or kwargs.get("secret_access_key", None)
@@ -58,10 +55,28 @@ class AWSProvider(BaseCloudProvider):
             service_name="bedrock-runtime",
             region_name=self.region
         )
-        
         # Service flags
         self._is_initialized = False
+    
+    def connect(self) -> str:
+        """
+        Establish a connection to AWS services.
         
+        Returns:
+            Connection status message
+        """
+        try:
+            # Attempt to list available models as a test of connectivity
+            self.session.client(
+                service_name="bedrock",
+                region_name=self.region
+            ).list_foundation_models()
+            self._is_initialized = True
+            return "Connected to AWS API"
+        except ClientError as e:
+            logging.error(f"Connection error: {str(e)}")
+            raise
+
     def _create_session(self) -> boto3.Session:
         """
         Create a properly configured boto3 session.
@@ -113,7 +128,7 @@ class AWSProvider(BaseCloudProvider):
     
     def run_inference(
         self,
-        model_name: str,
+        model_id: str,
         messages: Dict[str, Any],
         **kwargs
     ) -> Dict[str, Any]:
@@ -121,7 +136,7 @@ class AWSProvider(BaseCloudProvider):
         Execute inference using AWS Bedrock.
 
         Args:
-            model_name: Name of the model to use
+            model_id: Name of the model to use
             messages: Input data for the model
             **kwargs: Additional parameters for inference
             
@@ -135,12 +150,12 @@ class AWSProvider(BaseCloudProvider):
         inference_params = kwargs
         
         try:
-            model_id = self.get_bedrock_model_id(model_name)
+            model_id = self.get_bedrock_model_id(model_id)
             
             # Format the request according to the provider's requirements
             if "anthropic" in model_id:
                 # Determinar si es Claude 3.7 o superior
-                is_claude_3_7_plus = "claude-3-7" in model_name.lower() or "claude-3.7" in model_name.lower()
+                is_claude_3_7_plus = "claude-3-7" in model_id.lower() or "claude-3.7" in model_id.lower()
                 
                 messages = messages.get("messages", [])
                 
@@ -169,15 +184,15 @@ class AWSProvider(BaseCloudProvider):
                 # Format for Llama models
                 request_body = {
                     "prompt": messages.get("prompt", ""),
-                    "max_gen_len": inference_params.get("max_tokens", 512),
-                    "temperature": inference_params.get("temperature", 0.7),
+                    "max_gen_len": inference_params.get("max_tokens"),
+                    "temperature": inference_params.get("temperature"),
                 }
             elif "mistral" in model_id:
                 # Format for Mistral models
                 request_body = {
                     "prompt": messages.get("prompt", ""),
-                    "max_tokens": inference_params.get("max_tokens", 512),
-                    "temperature": inference_params.get("temperature", 0.7),
+                    "max_tokens": inference_params.get("max_tokens"),
+                    "temperature": inference_params.get("temperature"),
                 }
             else:
                 raise ValueError(f"Unsupported model format: {model_id}")
