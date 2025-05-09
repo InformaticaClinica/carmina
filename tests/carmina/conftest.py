@@ -29,6 +29,17 @@ def sample_medical_texts():
     ]
 
 @pytest.fixture
+def sample_medical_records():
+    """Fixture que proporciona registros médicos de ejemplo con ID y texto"""
+    return [
+        {
+            "id": "doc1", 
+            "text": "El paciente Juan García fue atendido.",
+            "result": "El paciente [**Juan García**] fue atendido."
+            },
+    ]
+
+@pytest.fixture
 def mock_llm_strategy():
     """Fixture providing a mocked LLM strategy"""
     strategy = MagicMock()

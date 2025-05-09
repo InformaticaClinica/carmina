@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
+from src.carmina.llm.strategies.mock_strategy import MockLLMStrategy
 from src.carmina.pipeline.anon_pipeline import AnonymizationPipeline
 
 class TestIdentificationPipeline:
@@ -8,9 +9,7 @@ class TestIdentificationPipeline:
     @pytest.fixture
     def mock_identify_strategy(self):
         """Fixture que proporciona una estrategia LLM en modo identification"""
-        strategy = MagicMock()
-        strategy.anonymization_mode = "identify"
-        strategy.get_name.return_value = "MockIdentifyStrategy"
+        strategy = MockLLMStrategy()
         return strategy
     
     @pytest.fixture
@@ -35,12 +34,11 @@ class TestIdentificationPipeline:
         # Arrange
         pipeline = AnonymizationPipeline(mock_identify_strategy)
         
-        # Configurar el procesador de identificación
-        pipeline.identification.process = MagicMock()
-        print(pipeline.identification.process.return_value)
-        
         # Act
         results = pipeline.run([sample_medical_records[0]])  # Usar el primer registro
-        
+        print("Results:", results)
+
         # Assert
-        # ... resto del código
+        assert len(results) == 1
+        assert results[0]["id"] == sample_medical_records[0]["id"]
+        assert results[0]["anonymized_text"] == sample_medical_records[0]["text"]
