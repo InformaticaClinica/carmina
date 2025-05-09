@@ -17,13 +17,6 @@ class DeepSeekStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name: str, cloud_provider: BaseCloudProvider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
-        self.provider_name = self.cloud_provider.get_name()
-        self.anonymization_mode =  os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode")
-        self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature")
-        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens")
-        self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p")
-        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty")
-        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty")
 
     def identify(self, text, **kwargs):
         """
@@ -45,7 +38,7 @@ class DeepSeekStrategy(BaseLLMStrategy):
         if self.provider_name == "aws":
             # Use AWS Bedrock through cloud provider
             raise NotImplementedError(f"Provider {self.provider_name} not implemented for DeepSeek.")
-        elif self.provider_name == "azure":
+        elif self.provider_name == "azure" or self.provider_name == "mock":
             # Use Azure OpenAI through cloud provider
             inference_params = {
                 "temperature": self.temperature,

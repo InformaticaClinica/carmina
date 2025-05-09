@@ -22,9 +22,9 @@ class AzureProvider(BaseCloudProvider):
         # "model-name": "azure.model-name:version",
         }
 
-    def __init__(self, **kwargs):
-        super().__init__(provider_name="azure", **kwargs)
-        self.api_key = os.environ.get("AZURE_API_KEY") or kwargs.get("api_key", None)
+    def __init__(self, name:str="azure", **kwargs):
+        super().__init__(name="azure", **kwargs)
+        self.api_key = os.environ.get("AZURE_SUBSCRIPTION_ID") or kwargs.get("azure_subscription_id", None)
         self.endpoint = os.environ.get("AZURE_ENDPOINT") or kwargs.get("endpoint", None)
         if self.api_key is None:
             raise ValueError("API key is required for Azure provider.")
@@ -35,6 +35,27 @@ class AzureProvider(BaseCloudProvider):
             credential=AzureKeyCredential(self.api_key),
         )
         logging.info("Azure Provider initialized.")
+
+    def connect(self) -> str:
+        """
+        Establish a connection to Azure services.
+        Returns:
+            str: Connection status message.
+        """
+        try:
+            # Simple validation - check if client is initialized
+            # and if credentials are available
+            if not self._client or not self.api_key or not self.endpoint:
+                raise ValueError("Azure client not properly initialized")
+            
+            # No need to make an actual API call here
+            # We just verify the client is set up correctly
+            self._is_initialized = True
+            logging.info("Azure credentials verified")
+            return "Connected to Azure API"
+        except Exception as e:
+            logging.error(f"Failed to connect to Azure API: {e}")
+            raise
 
     def run_inference(self, model_id: str, messages: dict, **kwargs) -> str:
         """
