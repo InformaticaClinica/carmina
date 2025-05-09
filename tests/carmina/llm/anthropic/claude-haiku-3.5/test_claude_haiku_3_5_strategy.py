@@ -8,30 +8,30 @@ from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
 @pytest.mark.llm
 @pytest.mark.anthropic
 @pytest.mark.haiku
-class TestClaudeHaiku3_7Strategy:
+class TestClaudeHaiku3_5Strategy:
     @pytest.fixture
     def mock_anthropic_strategy(self):
         """Fixture para una estrategia Anthropic simulada"""
         mock_cloud_provider = MockProvider()
-        strategy = AnthropicStrategy(model_name="claude-3.7-haiku", cloud_provider=mock_cloud_provider)
+        strategy = AnthropicStrategy(model_name="claude-3.5-haiku", cloud_provider=mock_cloud_provider)
         return strategy
     
     @pytest.fixture
     def anthropic_strategy(self):
         """Fixture para la estrategia de Anthropic"""
         aws_provider = AWSProvider("aws")
-        return AnthropicStrategy(model_name="claude-3.7-haiku", cloud_provider=aws_provider)
+        return AnthropicStrategy(model_name="claude-3.5-haiku", cloud_provider=aws_provider)
 
     def test_init(self, mock_anthropic_strategy):
         """Test que verifica la inicialización de la estrategia Anthropic"""
         assert isinstance(mock_anthropic_strategy.cloud_provider, MockProvider)
         assert mock_anthropic_strategy.anonymization_mode == "identify"
-        assert mock_anthropic_strategy.get_name() == "claude-3.7-haiku"
+        assert mock_anthropic_strategy.get_name() == "claude-3.5-haiku"
     
     def test_init_with_aws_provider(self, anthropic_strategy):
         """Test que verifica la inicialización de la estrategia Anthropic con un proveedor AWS"""
         assert anthropic_strategy.anonymization_mode == "identify"
-        assert anthropic_strategy.get_name() == "claude-3.7-haiku"
+        assert anthropic_strategy.get_name() == "claude-3.5-haiku"
     
     def test_aws_connection(self, anthropic_strategy):
         """Test que verifica la conexión de la estrategia Anthropic"""

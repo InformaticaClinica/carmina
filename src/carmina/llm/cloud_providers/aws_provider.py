@@ -25,6 +25,7 @@ class AWSProvider(BaseCloudProvider):
     # Model ID mapping for AWS Bedrock models
     _bedrock_model_ids = {
         # Anthropic Claude models
+        "claude-3.5-haiku": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
         "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         
         # LLama models
