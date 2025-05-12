@@ -7,7 +7,7 @@ from .classification import (
 )
 from .similarity import (
     calculate_cosine_similarity, calculate_levenshtein_distance,
-    calculate_inverse_levenshtein, calculate_embedding_similarity
+    calculate_inverse_levenshtein
 )
 from .extractors import extract_labels_from_masked_text
 

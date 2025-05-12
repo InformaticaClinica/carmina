@@ -30,7 +30,7 @@ class LabelingProcessor(BaseProcessor):
             return {"anonymized_text": "", "error": "Invalid input text"}
             
         # Extract entities from kwargs if available
-        entities = kwargs.get("entities", {})
+        entities = kwargs.get("entities_identified", {})
         
         try:
             # Call the LLM strategy to anonymize the text with labels
