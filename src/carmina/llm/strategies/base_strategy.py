@@ -9,6 +9,7 @@ import os
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
+from src.carmina.llm.utils.prompt_loader import load_system_prompt
 
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
@@ -38,6 +39,39 @@ class BaseLLMStrategy(ABC):
         self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty")
         self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty")
     
+    def get_message(self, filename, text, **kwargs) -> str:
+        """
+        Get the message to be sent to the model.
+        
+        Args:
+            filename: Name of the file being processed
+            text: Text content to process
+            **kwargs: Additional parameters for message formatting
+            
+        Returns:
+            Formatted message string
+        """
+        system_prompt = load_system_prompt(filename)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": text}
+        ]
+        return messages
+    
+    def get_inference_params(self) -> Dict[str, Any]:
+        """
+        Get the inference parameters for the model.
+        
+        Returns:
+            Dictionary of inference parameters
+        """
+        return {
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "top_p": self.top_p,
+            "frequency_penalty": self.frequency_penalty,
+            "presence_penalty": self.presence_penalty
+        }
 
     def set_anonymization_mode(self, mode: str):
         """

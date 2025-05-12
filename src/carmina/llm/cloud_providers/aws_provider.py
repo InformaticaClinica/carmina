@@ -29,8 +29,8 @@ class AWSProvider(BaseCloudProvider):
         "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         
         # LLama models
-        "llama-3-8b": "",
-        "llama-3-70b": "",
+        "llama-3.3-70b": "us.meta.llama3-3-70b-instruct-v1:0",
+        "llama-3.1-70b": "us.meta.llama3-1-70b-instruct-v1:0",
         
         # Other models
         "mistral-7b": "",
@@ -148,7 +148,7 @@ class AWSProvider(BaseCloudProvider):
             ValueError: If the model or request is invalid
             ClientError: If AWS returns an error
         """
-        inference_params = kwargs
+        inference_params = kwargs.get("inference_params", {})
         
         try:
             model_id = self.get_bedrock_model_id(model_id)
@@ -163,8 +163,8 @@ class AWSProvider(BaseCloudProvider):
                 # Format for Claude models
                 request_body = {
                     "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": int(inference_params.get("max_tokens", 1000)),
-                    "temperature": float(inference_params.get("temperature", 0.7)),
+                    "max_tokens": int(inference_params.get("max_tokens")),
+                    "temperature": float(inference_params.get("temperature")),
                 }
                 
                 # Diferentes formatos para diferentes versiones de Claude

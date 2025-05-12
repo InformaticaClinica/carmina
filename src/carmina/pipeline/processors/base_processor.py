@@ -3,9 +3,10 @@ Base processor interface for pipeline components.
 
 This module defines the abstract base class that all pipeline processors must implement.
 """
+import re
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 
 class BaseProcessor(ABC):
@@ -49,3 +50,17 @@ class BaseProcessor(ABC):
             True if valid, False otherwise
         """
         return text and isinstance(text, str)
+    
+    def _get_brackets_entities(self, text: str) -> List[str]:
+        """
+        Extracts entities enclosed in brackets [**...] from the text.
+
+        Args:
+            text (str): The input text.
+
+        Returns:
+            list: A list of extracted entities.
+        """
+        # Expresión regular para capturar texto entre [**...**]
+        pattern = r'\[\*\*(.*?)\*\*\]'
+        return re.findall(pattern, text)

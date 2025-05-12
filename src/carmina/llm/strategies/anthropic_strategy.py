@@ -31,30 +31,19 @@ class AnthropicStrategy(BaseLLMStrategy):
             return MODEL_CONFIGS[model_name_lower]["context_window"]
         return None # Default if model not found
     
-
-    def identify(self, text: str, **kwargs) -> str:
+    def run_inference(self, messages, inference_params) -> str:
         """
-        Identify sensitive information in the input text.
-        
+        Run inference using the specified model and parameters.
+
         Args:
-            text: Input text to process
-            **kwargs: Additional identification parameters
+            messages: List of messages to send to the model
+            inference_params: Dictionary of inference parameters
         Returns:
-            Text with identified sensitive information
+            Model's response as a string
         """
-        system_prompt = load_system_prompt("identify")
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text}
-        ]
-        inference_params = {
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-                "top_p": self.top_p,
-                "frequency_penalty": self.frequency_penalty,
-                "presence_penalty": self.presence_penalty
-            }
+        # Remove empty parameters from inference_params
+        inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
+        
         if self.provider_name == "aws":
             input_data = {"messages": messages}
             response = self.cloud_provider.run_inference(
@@ -70,6 +59,20 @@ class AnthropicStrategy(BaseLLMStrategy):
                 messages = messages,
                 inference_params = inference_params
             )
+
+    def identify(self, text: str, **kwargs) -> str:
+        """
+        Identify sensitive information in the input text.
+        
+        Args:
+            text: Input text to process
+            **kwargs: Additional identification parameters
+        Returns:
+            Text with identified sensitive information
+        """
+        messages = self.get_message("identify", text)
+        inference_params = self.get_inference_params()
+        return self.run_inference(messages, inference_params)
             
 
     def batch_identify(self, texts, **kwargs):
@@ -79,9 +82,16 @@ class AnthropicStrategy(BaseLLMStrategy):
     def count_tokens(self, text):
         pass
 
-
     def process_for_anonymization(self, text, mode):
-        pass
-
-    def process_for_anonymization(self, text, mode):
-        pass
+        """
+        Process the text for anonymization based on the specified mode.
+        
+        Args:
+            text: Input text to process
+            mode: Mode of processing (e.g., "label", "substitution")
+        Returns:
+            Processed text
+        """
+        messages = self.get_message(mode, text)
+        inference_params = self.get_inference_params()
+        return self.run_inference(messages, inference_params)

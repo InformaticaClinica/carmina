@@ -28,26 +28,21 @@ class LabelingProcessor(BaseProcessor):
         """
         if not self._validate_input(text):
             return {"anonymized_text": "", "error": "Invalid input text"}
-            
-        # Extract entities from kwargs if available
-        entities = kwargs.get("entities_identified", {})
         
         try:
             # Call the LLM strategy to anonymize the text with labels
             result = self.llm_strategy.process_for_anonymization(text, "label")
             
             # Extract labels for evaluation
-            labels = self._extract_labels(result.get("anonymized_text", ""))
+            labels = self._get_brackets_entities(result)
             
             return {
-                "anonymized_text": result.get("anonymized_text", ""),
-                "entities": result.get("entities", entities),
+                "anonymized_text": result,
                 "labels": labels
             }
             
         except Exception as e:
             logging.error(f"Error in labeling process: {e}")
-            return {"anonymized_text": text, "entities": entities, "error": str(e)}
             
     def _extract_labels(self, text: str) -> List[Dict[str, Any]]:
         """
@@ -64,3 +59,5 @@ class LabelingProcessor(BaseProcessor):
         labels = []
         # Logic to extract and return labels from text
         return labels
+    
+    
