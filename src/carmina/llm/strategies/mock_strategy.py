@@ -9,6 +9,11 @@ class MockLLMStrategy(BaseLLMStrategy):
     This class simulates the behavior of a real LLM strategy without
     requiring an actual model or cloud provider.
     """
+    __mock_example__ = {
+        "El paciente Juan García fue atendido." : 
+        "El paciente [**Juan García**] fue atendido."
+    }
+
     def __init__(self, model_name: str="MockLLMStrategy", cloud_provider: BaseCloudProvider = None, **kwargs):
         cloud_provider = MockProvider()
         super().__init__(model_name=model_name, cloud_provider=cloud_provider, **kwargs)
@@ -24,7 +29,16 @@ class MockLLMStrategy(BaseLLMStrategy):
         return 4096
     
     def identify(self, text: str, **kwargs) -> str:
-        return text
+        try:
+            # Simulate the identification process
+            if text in self.__mock_example__:
+                return self.__mock_example__[text]
+            else:
+                raise ValueError("Text not found in mock examples.")
+        except Exception as e:
+            # Handle any exceptions that occur during the identification process
+            print(f"Error during identification: {e}")
+            return text
     
     def batch_identify(self, texts, **kwargs):
         pass

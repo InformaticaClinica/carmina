@@ -11,32 +11,20 @@ from .similarity import (
 )
 from .extractors import extract_labels_from_masked_text
 
-def evaluate_identification(ground_truth_records: List[Dict[str, Any]], 
-                           prediction_records: List[Dict[str, Any]]) -> Dict[str, float]:
+def evaluate_identification(ground_truth_records: List[str], 
+                           prediction_records: List[str]) -> Dict[str, float]:
     """
     Evaluate PHI identification performance.
     
     Args:
-        ground_truth_records: List of ground truth records with labels
-        prediction_records: List of predicted records with labels
+        ground_truth: Array with ground truth labels
+        predictions: Array with predicted labels
         
     Returns:
         Dict[str, float]: Dictionary of metrics
     """
-    # Extract all labels
-    all_true_labels = []
-    all_predicted_labels = []
-    
-    for gt_record, pred_record in zip(ground_truth_records, prediction_records):
-        if 'labels' in gt_record and 'labels' in pred_record:
-            true_labels = [label.get('text', '') for label in gt_record['labels']]
-            pred_labels = [label.get('text', '') for label in pred_record['labels']]
-            
-            all_true_labels.extend(true_labels)
-            all_predicted_labels.extend(pred_labels)
-    
-    # Calculate metrics
-    tp, fp, fn = calculate_positives_and_negatives(all_true_labels, all_predicted_labels)
+    # Calculate metrics directly from the arrays
+    tp, fp, fn = calculate_positives_and_negatives(ground_truth_records, prediction_records)
     
     precision = calculate_precision(tp, fp)
     recall = calculate_recall(tp, fn)

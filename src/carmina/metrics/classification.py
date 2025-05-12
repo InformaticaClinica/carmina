@@ -132,19 +132,12 @@ def calculate_positives_and_negatives(ground_truth_labels: List[str], generated_
     if not isinstance(ground_truth_labels, list) or not isinstance(generated_labels, list):
         raise TypeError("Both inputs must be lists")
 
-    # Join labels into space-separated strings for comparison
-    str1 = ' '.join(ground_truth_labels)
-    str2 = ' '.join(generated_labels)
+    # Use set operations to find matching and differing labels
+    ground_truth_set = set(ground_truth_labels)
+    generated_set = set(generated_labels)
     
-    # Create the distance matrix
-    matrix = create_distance_matrix(str1, str2)
-
-    # Trace the minimum path and get the operations
-    deleted_words, added_words, unchanged_words = trace_edit_path(matrix, str1.split(' '), str2.split(' '))
-    
-    # Calculate metrics
-    false_negatives = len(added_words)
-    false_positives = len(deleted_words)
-    true_positives = len(unchanged_words)
+    true_positives = len(ground_truth_set & generated_set)
+    false_positives = len(generated_set - ground_truth_set)
+    false_negatives = len(ground_truth_set - generated_set)
     
     return true_positives, false_positives, false_negatives

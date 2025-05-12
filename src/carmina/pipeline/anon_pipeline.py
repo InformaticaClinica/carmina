@@ -69,8 +69,8 @@ class AnonymizationPipeline:
                     results.append({**record, "error": "Empty text"})
                     continue
                 
-                # Step 2: Run identification to find sensitive entities
-                identified_result = self.identification.process(text)
+                # Step 2: Run identification to find sensitive entitiesç
+                identified_result = self.identify(text)
                    
                 # Step 3: Run anonymization (labeling or substitution)
                 anonymized_result = self.anonymize(text=text, identified_result=identified_result)
@@ -78,8 +78,10 @@ class AnonymizationPipeline:
                 # Step 4: Combine all results into the output
                 output = {
                     **record,
+                    "identified_text": identified_result.get('anonymized_text', ''),
+                    "entities_identified": identified_result.get('entities', {}),
                     "anonymized_text": anonymized_result.get('anonymized_text', ''),
-                    "entities": anonymized_result.get('entities', {}),
+                    "entities_anonymized": anonymized_result.get('entities', {}),
                     "predicted_labels": anonymized_result.get('labels', []),
                 }
                 results.append(output)
@@ -89,6 +91,22 @@ class AnonymizationPipeline:
                 results.append({**record, "error": str(e)})
         
         return results
+
+    def identify(self, text: str) -> Dict[str, Any]:
+        """
+        Identify sensitive entities in the input text.
+        
+        Args:
+            text: The input text to identify entities in
+            
+        Returns:
+            Dictionary with identified entities and their labels
+        """
+        if self.identification is not None:
+            identified_result = self.identification.process(text)
+            return identified_result
+        else:
+            return {}
 
     def anonymize(self, text: str, identified_result:Dict[List, Any]) -> str:
         """

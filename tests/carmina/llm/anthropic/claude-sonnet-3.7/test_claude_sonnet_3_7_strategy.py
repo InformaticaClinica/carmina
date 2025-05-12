@@ -51,6 +51,6 @@ class TestClaudeSonnet3_7Strategy:
         assert anthropic_strategy.anonymization_mode == "identify"
         #first test the identify method
         text1 = sample_medical_records[0]["text"]
-        ground_truth1 = sample_medical_records[0]["result"]
+        ground_truth1 = sample_medical_records[0]["anonymized_text"]
         result = anthropic_strategy.identify(text1)
         assert result == ground_truth1

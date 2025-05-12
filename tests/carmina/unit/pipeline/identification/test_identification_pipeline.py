@@ -12,15 +12,7 @@ class TestIdentificationPipeline:
         strategy = MockLLMStrategy()
         return strategy
     
-    @pytest.fixture
-    def expected_entities(self):
-        """Fixture que proporciona las entidades que esperamos identificar"""
-        return [
-            {"type": "NOMBRE", "text": "Juan García", "start": 12, "end": 23},
-            {"type": "FECHA", "text": "12/05/2023", "start": 48, "end": 58}
-        ]
-    
-    def test_identification_pipeline_init(self, mock_identify_strategy, sample_medical_texts):
+    def test_identification_pipeline_init(self, mock_identify_strategy):
         """Test que el pipeline se inicializa correctamente en modo identify"""
         # Arrange & Act
         pipeline = AnonymizationPipeline(mock_identify_strategy)
@@ -30,7 +22,7 @@ class TestIdentificationPipeline:
         assert pipeline.identification is not None
         assert pipeline.anonymizer is None
     
-    def test_identification_pipeline_flow(self, mock_identify_strategy, sample_medical_records, expected_entities):
+    def test_identification_pipeline_flow(self, mock_identify_strategy, sample_medical_records):
         # Arrange
         pipeline = AnonymizationPipeline(mock_identify_strategy)
         
@@ -41,4 +33,4 @@ class TestIdentificationPipeline:
         # Assert
         assert len(results) == 1
         assert results[0]["id"] == sample_medical_records[0]["id"]
-        assert results[0]["anonymized_text"] == sample_medical_records[0]["text"]
+        assert results[0]["anonymized_text"] == sample_medical_records[0]["anonymized_text"]

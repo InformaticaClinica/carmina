@@ -50,7 +50,7 @@ class TestLlama3_2_3bStrategy:
         assert llama_strategy.anonymization_mode == "identify"
         #first test the identify method
         text1 = sample_medical_records[0]["text"]
-        ground_truth1 = sample_medical_records[0]["result"]
+        ground_truth1 = sample_medical_records[0]["anonymized_text"]
         result = llama_strategy.identify(text1)
         assert result == ground_truth1
 
