@@ -22,7 +22,7 @@ class ModelExecutor:
         output_dir (str): Directory where anonymized results will be saved
         metrics_dir (str): Directory where evaluation metrics will be saved.
     """
-    def __init__(self, model_name, anonymization_mode, cloud_provider, input_path, output_dir, metrics_dir):
+    def __init__(self, model_name, anonymization_mode, cloud_provider, input_path, output_dir, metrics_dir, debug_dir):
         """
         Initializes the ModelExecutor with the provided parameters.
 
@@ -40,6 +40,7 @@ class ModelExecutor:
         self.input_path = input_path
         self.output_dir = output_dir
         self.metrics_dir = metrics_dir
+        self.debug_dir = debug_dir
 
     def execute(self):
         """
@@ -61,7 +62,7 @@ class ModelExecutor:
         records = load_dataset(self.input_path)
 
         # Save loaded records to a JSON file for inspection
-        debug_path = os.path.join(self.output_dir, "loaded_records_debug.json")
+        debug_path = os.path.join(self.debug_dir, "loaded_records_debug.json")
         with open(debug_path, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=2)
 
@@ -86,11 +87,11 @@ class ModelExecutor:
         print(f"✅ Anonymization completed. Results saved ")
         
         # Evaluate the anonymization results
-        ground_truth_records = [entity["raw_entities"] for entity in anonymized_records]
+        ground_truth_records = [entity["gt_raw_entities"] for entity in anonymized_records]
         prediction_records = [entity["entities_identified"] for entity in anonymized_records]
         ground_truth_texts = [entity["masked_text"] for entity in anonymized_records]
         prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
-        ground_truth_labels = [entity["labels_anonymized"] for entity in anonymized_records]
+        ground_truth_labels = [entity["gt_masked_entities"] for entity in anonymized_records]
         prediction_labels = [entity["entities_anonymized"] for entity in anonymized_records]
 
         recorder.record_all(

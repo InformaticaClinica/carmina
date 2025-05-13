@@ -25,9 +25,11 @@ class BenchmarkRunner:
         self.output_dir = os.getenv("OUTPUT_DIR", "data/outputs/")
         self.metrics_dir = os.getenv("METRICS_DIR", "metrics/")
         self.debug = os.getenv("DEBUG", "false").lower()
+        self.debug_dir = os.getenv("DEBUG_DIR", "data/outputs/debug/")
 
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.metrics_dir, exist_ok=True)
+        os.makedirs(self.debug_dir, exist_ok=True)
 
     def run(self):
         """
@@ -53,7 +55,8 @@ class BenchmarkRunner:
                 cloud_provider=self.cloud_provider,
                 input_path=self.input_path,
                 output_dir=self.output_dir,
-                metrics_dir=self.metrics_dir
+                metrics_dir=self.metrics_dir,
+                debug_dir=self.debug_dir,
             )
             executor.execute()
 

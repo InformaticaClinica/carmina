@@ -11,32 +11,66 @@ from .similarity import (
 )
 from .extractors import extract_labels_from_masked_text
 
-def evaluate_identification(ground_truth_records: List[str], 
-                           prediction_records: List[str]) -> Dict[str, float]:
+def evaluate_identification(ground_truth_records: List[List[str]], 
+                           prediction_records: List[List[str]]) -> Dict[str, Any]:
     """
     Evaluate PHI identification performance.
     
     Args:
-        ground_truth: Array with ground truth labels
-        predictions: Array with predicted labels
+        ground_truth_records: List of ground truth records (list of lists)
+        prediction_records: List of predicted records (list of lists)
         
     Returns:
-        Dict[str, float]: Dictionary of metrics
+        Dict[str, Any]: Dictionary of metrics with averages and per-file details
     """
-    # Calculate metrics directly from the arrays
-    tp, fp, fn = calculate_positives_and_negatives(ground_truth_records, prediction_records)
+    total_precision = 0.0
+    total_recall = 0.0
+    total_f1 = 0.0
+    total_tp = 0
+    total_fp = 0
+    total_fn = 0
+    count = 0
+    per_file_metrics = []
     
-    precision = calculate_precision(tp, fp)
-    recall = calculate_recall(tp, fn)
-    f1 = calculate_f1(precision, recall)
+    for gt_record, pred_record in zip(ground_truth_records, prediction_records):
+        # Calculate metrics for each file/record
+        tp, fp, fn = calculate_positives_and_negatives(gt_record, pred_record)
+        precision = calculate_precision(tp, fp)
+        recall = calculate_recall(tp, fn)
+        f1 = calculate_f1(precision, recall)
+        
+        # Add to totals
+        total_precision += precision
+        total_recall += recall
+        total_f1 += f1
+        total_tp += tp
+        total_fp += fp
+        total_fn += fn
+        count += 1
+        
+        # Store per-file metrics
+        per_file_metrics.append({
+            "tp": tp,
+            "fp": fp,
+            "fn": fn
+        })
+    
+    # Calculate averages
+    avg_precision = total_precision / count if count > 0 else 0
+    avg_recall = total_recall / count if count > 0 else 0
+    avg_f1 = total_f1 / count if count > 0 else 0
+    avg_tp = total_tp / count if count > 0 else 0
+    avg_fp = total_fp / count if count > 0 else 0
+    avg_fn = total_fn / count if count > 0 else 0
     
     return {
-        "identification_precision": precision,
-        "identification_recall": recall,
-        "identification_f1": f1,
-        "identification_tp": tp,
-        "identification_fp": fp,
-        "identification_fn": fn
+        "identification_precision": avg_precision,
+        "identification_recall": avg_recall,
+        "identification_f1": avg_f1,
+        "identification_tp": avg_tp,
+        "identification_fp": avg_fp,
+        "identification_fn": avg_fn,
+        "identification_per_file": per_file_metrics
     }
 
 def evaluate_label(ground_truth_texts: List[str], 

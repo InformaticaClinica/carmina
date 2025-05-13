@@ -109,7 +109,8 @@ class AnonymizationPipeline:
                 # Step 4: Combine all results into the output
                 output = {
                     **record,
-                    "raw_entities": self.identification._get_brackets_entities(text),
+                    "gt_raw_entities": self.identification._get_brackets_entities(record.get('identify', '')),
+                    "gt_masked_entities": self.identification._get_brackets_entities(record.get('masked_text', '')),
                     "identified_text": identified_result.get('anonymized_text', ''),
                     "entities_identified": identified_result.get('entities', {}),
                     "anonymized_text": anonymized_result.get('anonymized_text', ''),
