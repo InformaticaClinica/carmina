@@ -39,14 +39,18 @@ def evaluate_identification(ground_truth_records: List[str],
         "identification_fn": fn
     }
 
-def evaluate_substitution(ground_truth_records: List[Dict[str, Any]], 
-                         prediction_records: List[Dict[str, Any]]) -> Dict[str, float]:
+def evaluate_label(ground_truth_texts: List[str], 
+                  prediction_texts: List[str],
+                  ground_truth_labels: List[List[str]],
+                  prediction_labels: List[List[str]]) -> Dict[str, float]:
     """
-    Evaluate text substitution quality.
+    Evaluate text label quality.
     
     Args:
-        ground_truth_records: List of ground truth records
-        prediction_records: List of predicted records
+        ground_truth_texts: List of ground truth texts
+        prediction_texts: List of predicted texts
+        ground_truth_labels: List of ground truth labels (list of lists)
+        prediction_labels: List of predicted labels (list of lists)
         
     Returns:
         Dict[str, float]: Dictionary of metrics
@@ -54,33 +58,66 @@ def evaluate_substitution(ground_truth_records: List[Dict[str, Any]],
     total_cosine = 0.0
     total_levenshtein = 0
     total_inv_levenshtein = 0.0
+    total_precision = 0.0
+    total_recall = 0.0
+    total_tp = 0.0
+    total_fp = 0.0
+    total_fn = 0.0
+    total_f1 = 0.0
     count = 0
     
-    for gt_record, pred_record in zip(ground_truth_records, prediction_records):
-        if 'text' in gt_record and 'text' in pred_record:
-            gt_text = gt_record['text']
-            pred_text = pred_record['text']
-            
-            # Calculate similarity metrics
-            cosine_sim = calculate_cosine_similarity(gt_text, pred_text)
-            levenshtein = calculate_levenshtein_distance(gt_text, pred_text)
-            inv_levenshtein = calculate_inverse_levenshtein(levenshtein)
-            
-            total_cosine += cosine_sim
-            total_levenshtein += levenshtein
-            total_inv_levenshtein += inv_levenshtein
-            count += 1
-    
+    for gt_text, pred_text, gt_labels, pred_labels in zip(
+            ground_truth_texts, prediction_texts, 
+            ground_truth_labels, prediction_labels):
+        # Calculate similarity metrics for texts
+        cosine_sim = calculate_cosine_similarity(gt_text, pred_text)
+        levenshtein = calculate_levenshtein_distance(gt_text, pred_text)
+        inv_levenshtein = calculate_inverse_levenshtein(levenshtein)
+        
+        # Calculate classification metrics for each document's labels
+        tp, fp, fn = calculate_positives_and_negatives(gt_labels, pred_labels)
+        precision = calculate_precision(tp, fp)
+        recall = calculate_recall(tp, fn)
+        f1 = calculate_f1(precision, recall)
+        
+        total_cosine += cosine_sim
+        total_levenshtein += levenshtein
+        total_inv_levenshtein += inv_levenshtein
+        total_precision += precision
+        total_recall += recall
+        total_f1 += f1
+        count += 1
+        total_tp += tp
+        total_fp += fp
+        total_fn += fn
+
+        
     # Calculate averages
-    avg_cosine = total_cosine / count if count > 0 else 0
-    avg_levenshtein = total_levenshtein / count if count > 0 else 0
-    avg_inv_levenshtein = total_inv_levenshtein / count if count > 0 else 0
+    if count > 0:
+        avg_cosine = total_cosine / count
+        avg_levenshtein = total_levenshtein / count
+        avg_inv_levenshtein = total_inv_levenshtein / count
+        avg_precision = total_precision / count
+        avg_recall = total_recall / count
+        avg_f1 = total_f1 / count
+        avg_tp = total_tp / count
+        avg_fp = total_fp / count
+        avg_fn = total_fn / count
+    else:
+        avg_cosine = avg_levenshtein = avg_inv_levenshtein = 0
+        avg_precision = avg_recall = avg_f1 = 0
     
     return {
-        "substitution_cosine_sim": avg_cosine,
-        "substitution_levenshtein": avg_levenshtein,
-        "substitution_inv_levenshtein": avg_inv_levenshtein,
-        "substitution_overall": avg_cosine + avg_inv_levenshtein
+        "label_cosine_sim": avg_cosine,
+        "label_levenshtein": avg_levenshtein,
+        "label_inv_levenshtein": avg_inv_levenshtein,
+        "label_precision": avg_precision,
+        "label_recall": avg_recall,
+        "label_f1": avg_f1,
+        "label_overall": avg_cosine + avg_inv_levenshtein + avg_f1 + avg_precision + avg_recall,
+        "label_tp": avg_tp,
+        "label_fp": avg_fp,
+        "label_fn": avg_fn
     }
 
 def evaluate_text_pair(ground_truth: str, 

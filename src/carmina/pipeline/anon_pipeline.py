@@ -6,6 +6,8 @@ anonymization process from raw text to fully anonymized output.
 """
 
 import logging
+logger = logging.getLogger(__name__)
+
 import os
 from typing import Dict, List, Any, Optional
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
@@ -100,18 +102,18 @@ class AnonymizationPipeline:
                 
                 # Step 2: Run identification to find sensitive entities
                 identified_result = self.identify(text)
-                   
+
                 # Step 3: Run anonymization (labeling or substitution)
                 anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result.get("entities"))
-                
+
                 # Step 4: Combine all results into the output
                 output = {
                     **record,
+                    "raw_entities": self.identification._get_brackets_entities(text),
                     "identified_text": identified_result.get('anonymized_text', ''),
                     "entities_identified": identified_result.get('entities', {}),
                     "anonymized_text": anonymized_result.get('anonymized_text', ''),
-                    "entities_anonymized": anonymized_result.get('entities', {}),
-                    "predicted_labels": anonymized_result.get('labels', []),
+                    "entities_anonymized": anonymized_result.get('labels', {}),
                 }
                 results.append(output)
                 self.processed_count += 1

@@ -26,12 +26,18 @@ class GeminiStrategy(BaseLLMStrategy):
         self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty", 0.0)
         self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p", 1.0)
 
-    def identify(self, text, **kwargs):
-        system_prompt = load_system_prompt("identify")
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text}
-        ]
+    def run_inference(self, messages, inference_params):
+        """
+        Run inference on the model with the provided messages and parameters.
+        
+        Args:
+            messages (list): List of messages to send to the model.
+            inference_params (dict): Inference parameters for the model.
+        
+        Returns:
+            str: The model's response.
+        """
+        inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
         if self.provider_name == "aws":
             raise NotImplementedError(f"Provider {self.provider_name} not implemented for Gemini.")
         elif self.provider_name == "azure":
@@ -51,8 +57,6 @@ class GeminiStrategy(BaseLLMStrategy):
         elif self.provider_name == "local":
             if "gemma" not in self.model_name.lower():
                 raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")
-            # LocalProvider just works with gemma models
-
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
@@ -68,6 +72,15 @@ class GeminiStrategy(BaseLLMStrategy):
             return response
         else:
             raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")
+
+    def identify(self, text, **kwargs):
+        message = self.get_message(text)
+        inference_params = self.get_inference_params()
+        return self.run_inference(
+            messages=message,
+            inference_params=inference_params
+        )
+        
         
     def batch_identify(self, texts, **kwargs):
         pass

@@ -5,7 +5,7 @@ from src.carmina.pipeline.anon_pipeline import AnonymizationPipeline
 from src.carmina.llm.factory import LLMFactory
 from src.carmina.metrics.recorder import MetricsRecorder
 from src.carmina.metrics.timer import measure_time
-#from metrics.evaluator import evaluate_identification, evaluate_substitution
+from src.carmina.metrics.evaluator import evaluate_identification, evaluate_label
 
 class ModelExecutor:
     """
@@ -83,15 +83,32 @@ class ModelExecutor:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(anonymized_records, f, indent=2)
 
-        y_true = [r["labels"] for r in records]
-        y_pred = [r["predicted_labels"] for r in anonymized_records]
+        print(f"✅ Anonymization completed. Results saved ")
+        
+        # Evaluate the anonymization results
+        ground_truth_records = [entity["raw_entities"] for entity in anonymized_records]
+        prediction_records = [entity["entities_identified"] for entity in anonymized_records]
+        ground_truth_texts = [entity["masked_text"] for entity in anonymized_records]
+        prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
+        ground_truth_labels = [entity["labels_anonymized"] for entity in anonymized_records]
+        prediction_labels = [entity["entities_anonymized"] for entity in anonymized_records]
 
-        # recorder.record_all({
-        #     **evaluate_identification(y_true, y_pred),
-        #     **evaluate_substitution(y_true, y_pred)
-        # })
+        recorder.record_all(
+            evaluate_label(
+                ground_truth_texts=ground_truth_texts,
+                prediction_texts=prediction_texts,
+                ground_truth_labels=ground_truth_labels,
+                prediction_labels=prediction_labels
+                )
+            )
+        recorder.record_all(
+            evaluate_identification(
+                ground_truth_records=ground_truth_records, 
+                prediction_records=prediction_records
+                )
+            )
 
-        # metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
-        # recorder.export_to_json(metrics_path)
+        metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
+        recorder.export_to_json(metrics_path)
 
-        # print(f"✅ Model {self.model_name} completed. Results in {output_path} and {metrics_path}")
+        print(f"✅ Model {self.model_name} completed. Results in {output_path} and {metrics_path}")
