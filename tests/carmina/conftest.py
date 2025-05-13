@@ -35,8 +35,10 @@ def sample_medical_records():
         {
             "id": "doc1", 
             "text": "El paciente Juan García fue atendido.",
-            "anonymized_text": "El paciente [**Juan García**] fue atendido.",
+            "identified_text": "El paciente [**Juan García**] fue atendido.",
             "entities_identified": ["Juan García"],
+            "anonymized_text":"El paciente [**OTROS_SUJETO_ASISTENCIA**] fue atendido.",
+            "entities_anonymized": ["OTROS_SUJETO_ASISTENCIA"]
             },
     ]
 

@@ -33,4 +33,4 @@ class TestIdentificationPipeline:
         # Assert
         assert len(results) == 1
         assert results[0]["id"] == sample_medical_records[0]["id"]
-        assert results[0]["anonymized_text"] == sample_medical_records[0]["anonymized_text"]
+        assert results[0]["identified_text"] == sample_medical_records[0]["identified_text"]
