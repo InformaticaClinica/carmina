@@ -43,7 +43,6 @@ class AnthropicStrategy(BaseLLMStrategy):
         """
         # Remove empty parameters from inference_params
         inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
-        
         if self.provider_name == "aws":
             input_data = {"messages": messages}
             response = self.cloud_provider.run_inference(

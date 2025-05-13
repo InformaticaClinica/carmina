@@ -17,36 +17,13 @@ class DeepSeekStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name: str, cloud_provider: BaseCloudProvider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
-
-    def identify(self, text, **kwargs):
-        """
-        Identify sensitive information in the input text.
-        
-        Args:
-            text: Input text to process
-            **kwargs: Additional identification parameters
-        Returns:
-            Text with identified sensitive information
-        """
-        system_prompt = load_system_prompt("identify")
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text}
-        ]
-        # TODO: Adapter design pattern for DeepSeek
+    
+    def run_inference(self, messages, inference_params) -> str:
+        inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
         if self.provider_name == "aws":
             # Use AWS Bedrock through cloud provider
             raise NotImplementedError(f"Provider {self.provider_name} not implemented for DeepSeek.")
         elif self.provider_name == "azure" or self.provider_name == "mock":
-            # Use Azure OpenAI through cloud provider
-            inference_params = {
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-                "top_p": self.top_p,
-                "frequency_penalty": self.frequency_penalty,
-                "presence_penalty": self.presence_penalty
-            }
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
@@ -55,8 +32,6 @@ class DeepSeekStrategy(BaseLLMStrategy):
             return self.adapt_respose(response)
         else:
             raise NotImplementedError(f"Provider {self.provider_name} not implemented for DeepSeek.")
-
-
     
     def batch_identify(self, texts, **kwargs):
         pass
@@ -75,9 +50,6 @@ class DeepSeekStrategy(BaseLLMStrategy):
         return None
     
     def count_tokens(self, text):
-        pass
-
-    def process_for_anonymization(self, text, mode):
         pass
 
     def process_for_identification(self, text, mode):

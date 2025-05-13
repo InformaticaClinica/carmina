@@ -24,8 +24,8 @@ class AzureProvider(BaseCloudProvider):
 
     def __init__(self, name:str="azure", **kwargs):
         super().__init__(name="azure", **kwargs)
-        self.api_key = os.environ.get("AZURE_SUBSCRIPTION_ID") or kwargs.get("azure_subscription_id", None)
         self.endpoint = os.environ.get("AZURE_ENDPOINT") or kwargs.get("endpoint", None)
+        self.api_key = os.environ.get("AZURE_SUBSCRIPTION_ID") or kwargs.get("azure_subscription_id", None)
         if self.api_key is None:
             raise ValueError("API key is required for Azure provider.")
         if self.endpoint is None:
@@ -33,6 +33,7 @@ class AzureProvider(BaseCloudProvider):
         self._client = ChatCompletionsClient(
             endpoint=self.endpoint,
             credential=AzureKeyCredential(self.api_key),
+            api_version="2024-05-01-preview"
         )
         logging.info("Azure Provider initialized.")
 
@@ -66,15 +67,26 @@ class AzureProvider(BaseCloudProvider):
         logging.info(f"Running inference on Azure with model {model_id}")
         deployment_name = self._azure_model_ids.get(model_id)
 
-        response = self._client.complete(
-            messages=self.adapt_message(messages),
-            max_tokens=kwargs.get("max_tokens"),
-            temperature=kwargs.get("temperature"),
-            top_p=kwargs.get("top_p"),
-            frequency_penalty=kwargs.get("frequency_penalty"),
-            presence_penalty=kwargs.get("presence_penalty"),
-            model = deployment_name,
-        )
+        # Prepare parameters, only including non-None values
+        params = {
+            "messages": self.adapt_message(messages),
+            "model": deployment_name,
+        }
+
+        # Add optional parameters only if they're not None
+        if kwargs.get("max_tokens") is not None:
+            params["max_tokens"] = kwargs.get("max_tokens")
+        if kwargs.get("temperature") is not None:
+            params["temperature"] = kwargs.get("temperature")
+        if kwargs.get("top_p") is not None:
+            params["top_p"] = kwargs.get("top_p")
+        if kwargs.get("frequency_penalty") is not None:
+            params["frequency_penalty"] = kwargs.get("frequency_penalty")
+        if kwargs.get("presence_penalty") is not None:
+            params["presence_penalty"] = kwargs.get("presence_penalty")
+
+        # Call complete with the filtered parameters
+        response = self._client.complete(**params)
         return response.choices[0].message.content
 
     def get_name(self) -> str:

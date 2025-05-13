@@ -82,17 +82,31 @@ class BaseLLMStrategy(ABC):
         """
         self.anonymization_mode = mode
 
-    @abstractmethod
     def identify(self, text: str, **kwargs) -> str:
         """
         Identify sensitive information in the input text.
-
+        
         Args:
             text: Input text to process
             **kwargs: Additional identification parameters
-
         Returns:
             Text with identified sensitive information
+        """
+        messages = self.get_message("identify",text)
+        inference_params = self.get_inference_params()
+        return self.run_inference(messages, inference_params)
+
+    @abstractmethod
+    def run_inference(self, messages, inference_params) -> str:
+        """
+        Run inference on the model with the given messages and parameters.
+
+        Args:
+            messages: List of messages to send to the model
+            inference_params: Dictionary of inference parameters
+
+        Returns:
+            Model's response as a string
         """
         pass
 
@@ -151,7 +165,6 @@ class BaseLLMStrategy(ABC):
         """
         return self.cloud_provider.get_name()
     
-    @abstractmethod
     def process_for_anonymization(self, text: str, strategy: str) -> Dict[str, Any]:
         """
         Process text specifically for anonymization tasks.
@@ -164,19 +177,6 @@ class BaseLLMStrategy(ABC):
             Dictionary with processed results including the anonymized text
             and any identified entities
         """
-        pass
-
-    @abstractmethod
-    def process_for_anonymization(self, text: str, mode: str) -> Dict[str, Any]:
-        """
-        Process text specifically for anonymization tasks.
-        
-        Args:
-            text: Text to anonymize
-            mode: Anonymization mode to apply (e.g., 'label', 'substitute')
-            
-        Returns:
-            Dictionary with processed results including the anonymized text
-            and any identified entities
-        """
-        pass
+        messages = self.get_message(strategy,text)
+        inference_params = self.get_inference_params()
+        return self.run_inference(messages, inference_params)
