@@ -25,16 +25,38 @@ class OpenAIProvider(BaseCloudProvider):
         self._client = OpenAI()
     
     def run_inference(self, model_id: str, messages: dict, **kwargs) -> str:
-        response = self._client.chat.completions.create(
-            model=self.get_model_id(model_id),
-            messages=messages,
-            max_tokens=kwargs.get("max_tokens"),
-            temperature=kwargs.get("temperature"),
-            top_p=kwargs.get("top_p"),
-            frequency_penalty=kwargs.get("frequency_penalty"),
-            presence_penalty=kwargs.get("presence_penalty"),
-        )
-        return response.choices[0].message
+        """
+        Runs inference using the OpenAI API.
+        
+        Args:
+            model_id (str): The model identifier.
+            messages (dict): The messages to process.
+            **kwargs: Additional parameters for the API call.
+            
+        Returns:
+            str: The model's response message.
+        """
+        # Prepare parameters, only including required values
+        params = {
+            "model": self.get_model_id(model_id),
+            "messages": messages,
+        }
+        
+        # Add optional parameters only if they're not None
+        if kwargs.get("max_tokens") is not None:
+            params["max_completion_tokens"] = kwargs.get("max_tokens")
+        if kwargs.get("temperature") is not None:
+            params["temperature"] = kwargs.get("temperature")
+        if kwargs.get("top_p") is not None:
+            params["top_p"] = kwargs.get("top_p")
+        if kwargs.get("frequency_penalty") is not None:
+            params["frequency_penalty"] = kwargs.get("frequency_penalty")
+        if kwargs.get("presence_penalty") is not None:
+            params["presence_penalty"] = kwargs.get("presence_penalty")
+        
+        # Call the API with the filtered parameters
+        response = self._client.chat.completions.create(**params)
+        return response.choices[0].message.content
 
     def get_model_id(self, model_name: str) -> str:
         """

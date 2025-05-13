@@ -142,7 +142,7 @@ class AnonymizationPipeline:
         else:
             return {}
 
-    def anonymize(self, text: str, identified_result:Dict[List, Any]) -> str:
+    def anonymize(self, text: str, identified_result:Dict[List, Any]) -> Dict[str, Any]:
         """
         Anonymize the input text using the configured LLM strategy.
         

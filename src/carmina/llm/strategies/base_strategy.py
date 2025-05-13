@@ -33,11 +33,11 @@ class BaseLLMStrategy(ABC):
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
         self.anonymization_mode =  os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode")
-        self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature")
-        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens")
-        self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p")
-        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty")
-        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty")
+        self.temperature = float(os.environ.get("TEMPERATURE") or kwargs.get("temperature", 1.0))
+        self.max_tokens = int(os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500))
+        self.top_p = float(os.environ.get("TOP_P") or kwargs.get("top_p", 1.0))
+        self.frequency_penalty = float(os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty", 0.0))
+        self.presence_penalty = float(os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty", 0.0))
     
     def get_message(self, filename, text, **kwargs) -> str:
         """

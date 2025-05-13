@@ -22,36 +22,16 @@ class OpenAIStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name, cloud_provider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
-        self.anonymization_mode = os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode", "label")
-        self.temperature = os.environ.get("TEMPERATURE") or kwargs.get("temperature", 0.7)
-        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500)
-        self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p", 1.0)
-        self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get("frequency_penalty", 0.0)
-        self.presence_penalty = os.environ.get("PRESENCE_PENALTY") or kwargs.get("presence_penalty", 0.0)
-        self.model_name = model_name
-        self.cloud_provider = cloud_provider
-        self.provider_name = self.cloud_provider.get_name()
     
-    def identify(self, text: str, **kwargs) -> str:
-        #TODO: Adapter design pattern for OpenAI
-        system_prompt = load_system_prompt("identify")
-        messages = [
-            {"role": "developer", "content": system_prompt},
-            {"role": "user", "content": text}
-        ]
+    def run_inference(self, messages, inference_params):
+        inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
+        messages = self.adapt_message(messages)
         if self.provider_name == "openai":
-            self.cloud_provider.run_inference(
+            return self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
-                inference_params={
-                    "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
-                    "top_p": self.top_p,
-                    "frequency_penalty": self.frequency_penalty,
-                    "presence_penalty": self.presence_penalty
-                }
+                **inference_params
             )
-            
 
     def batch_identify(self, texts: List[str], **kwargs) -> List[str]:
         pass
@@ -62,5 +42,27 @@ class OpenAIStrategy(BaseLLMStrategy):
     def count_tokens(self, text: str) -> int:
         pass
 
-    def process_for_anonymization(self, text: str, strategy: str) -> Dict[str, Any]:
-        pass
+    def adapt_message(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """
+        Adapts the message format for OpenAI.
+        
+        Args:
+            messages: List of messages to adapt
+        
+        Returns:
+            List of adapted messages
+        """
+        adapted_messages = []
+        for message in messages:
+            role = message.get("role")
+            content = message.get("content")
+            if role == "system":
+                adapted_messages.append({"role": "developer", "content": content})
+            elif role == "user":
+                adapted_messages.append({"role": "user", "content": content})
+            elif role == "assistant":
+                adapted_messages.append({"role": "assistant", "content": content})
+            else:
+                raise ValueError(f"Unknown role: {role}")
+        return adapted_messages
+
