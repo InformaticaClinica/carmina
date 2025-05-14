@@ -93,19 +93,25 @@ class ModelExecutor:
         prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
         ground_truth_labels = [entity["gt_masked_entities"] for entity in anonymized_records]
         prediction_labels = [entity["entities_anonymized"] for entity in anonymized_records]
+        filenames = [entity["id"] for entity in anonymized_records]
+        languages = [self.get_language(entity["id"]) for entity in anonymized_records] #TODO: improve software design
 
         recorder.record_all(
             evaluate_label(
                 ground_truth_texts=ground_truth_texts,
                 prediction_texts=prediction_texts,
                 ground_truth_labels=ground_truth_labels,
-                prediction_labels=prediction_labels
+                prediction_labels=prediction_labels,
+                filenames=filenames,
+                language=languages,
                 )
             )
         recorder.record_all(
             evaluate_identification(
                 ground_truth_records=ground_truth_records, 
-                prediction_records=prediction_records
+                prediction_records=prediction_records,
+                filenames=filenames,
+                language=languages,
                 )
             )
 
@@ -113,3 +119,40 @@ class ModelExecutor:
         recorder.export_to_json(metrics_path)
 
         print(f"✅ Model {self.model_name} completed. Results in {output_path} and {metrics_path}")
+
+    def get_language(self, id):
+        """
+        Get the language for a given file ID from CARMEN1_mappings.tsv
+        
+        Args:
+            id (str): File ID (e.g., "CARMEN-I_CC_1.txt")
+        
+        Returns:
+            str: Language code (es, bi, cat) or None if not found
+        """
+        import os
+        import pandas as pd
+        
+        # Remove .txt extension if present
+        if id.endswith(".txt"):
+            id = id[:-4]
+        
+        # Path to the mapping file
+        # Path to the mapping file is outside of 'src' directory
+        mapping_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+                       "data", "inputs", "CARMEN1_mappings.tsv")
+        try:
+            # Read the TSV file using pandas for efficiency
+            df = pd.read_csv(mapping_file, sep='\t')
+            
+            # Find the matching row
+            match = df[df['filename'] == id]
+            
+            if not match.empty:
+                return match['language'].values[0]
+            else:
+                return None
+                
+        except Exception as e:
+            print(f"Error accessing mapping file: {e}")
+            return None

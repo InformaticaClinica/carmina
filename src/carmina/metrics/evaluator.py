@@ -12,7 +12,9 @@ from .similarity import (
 from .extractors import extract_labels_from_masked_text
 
 def evaluate_identification(ground_truth_records: List[List[str]], 
-                           prediction_records: List[List[str]]) -> Dict[str, Any]:
+                           prediction_records: List[List[str]],
+                           filenames: List[str],
+                           language: List[str]) -> Dict[str, Any]:
     """
     Evaluate PHI identification performance.
     
@@ -50,9 +52,15 @@ def evaluate_identification(ground_truth_records: List[List[str]],
         
         # Store per-file metrics
         per_file_metrics.append({
+            "filename": filenames[count - 1] if filenames else None,
+            "language": language[count - 1] if language else None,
             "tp": tp,
             "fp": fp,
-            "fn": fn
+            "fn": fn,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "labels": [gt_record, pred_record]
         })
     
     # Calculate averages
@@ -76,7 +84,9 @@ def evaluate_identification(ground_truth_records: List[List[str]],
 def evaluate_label(ground_truth_texts: List[str], 
                   prediction_texts: List[str],
                   ground_truth_labels: List[List[str]],
-                  prediction_labels: List[List[str]]) -> Dict[str, float]:
+                  prediction_labels: List[List[str]],
+                  filenames: List[str],
+                  language: List[str]) -> Dict[str, float]:
     """
     Evaluate text label quality.
     
@@ -99,6 +109,7 @@ def evaluate_label(ground_truth_texts: List[str],
     total_fn = 0.0
     total_f1 = 0.0
     count = 0
+    per_file_metrics = []
     
     for gt_text, pred_text, gt_labels, pred_labels in zip(
             ground_truth_texts, prediction_texts, 
@@ -124,6 +135,21 @@ def evaluate_label(ground_truth_texts: List[str],
         total_tp += tp
         total_fp += fp
         total_fn += fn
+        per_file_metrics.append({
+            "filename": filenames[count - 1] if filenames else None,
+            "language": language[count - 1] if language else None,
+            "cosine_sim": cosine_sim,
+            "levenshtein_distance": levenshtein,
+            "inv_levenshtein": inv_levenshtein,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "labels": [gt_labels, pred_labels],
+            "texts": [gt_text, pred_text]
+        })
 
         
     # Calculate averages
@@ -151,7 +177,8 @@ def evaluate_label(ground_truth_texts: List[str],
         "label_overall": avg_cosine + avg_inv_levenshtein + avg_f1 + avg_precision + avg_recall,
         "label_tp": avg_tp,
         "label_fp": avg_fp,
-        "label_fn": avg_fn
+        "label_fn": avg_fn,
+        "label_per_file": per_file_metrics
     }
 
 def evaluate_text_pair(ground_truth: str, 
