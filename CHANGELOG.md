@@ -19,3 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project documentation including flow diagrams and output specifications in `docs/`.
 - Configuration management via `src/carmina/config.py`.
 - Utility functions for file operations and logging in `src/carmina/utils/`.
+- Specific focus on processing the CARMEN corpus, expecting the following input structure under `data/inputs/txt/`:
+    - `ann/`: Contains `.ann` files with annotations.
+    - `identify/`: Directory for identified entities (structure to be defined by processing).
+    - `masked/`: Directory for masked text versions (structure to be defined by processing).
+    - `raw/`: Contains the raw text files corresponding to the annotations.
+  The `data/inputs/` directory should also contain a `CARMEN1_mappings.tsv` file for mappings related to the corpus.
