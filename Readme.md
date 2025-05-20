@@ -123,6 +123,23 @@ hc-carmina/
 └── requirements.txt        # Python dependencies
 ```
 
+## Changelog Summary
+
+### Version [1.0.0] - 2025-05-20
+* Initial project setup with `main.py` entry point.
+* Docker support with `Dockerfile` and `docker-compose.yaml`.
+* Data loading and processing capabilities under `src/carmina/data_sources/`.
+* LLM integration framework in `src/carmina/llm/`, supporting multiple cloud providers and custom prompts.
+* Metrics calculation and evaluation system in `src/carmina/metrics/`.
+* Data processing pipeline implemented in `src/carmina/pipeline/`, including anonymization features.
+* Benchmarking tools for performance analysis in `src/carmina/tools/`.
+* Comprehensive testing suite under `tests/` covering unit, integration, and end-to-end tests.
+* Project documentation including flow diagrams and output specifications in `docs/`.
+* Configuration management via `src/carmina/config.py`.
+* Utility functions for file operations and logging in `src/carmina/utils/`.
+
+For a full list of changes, please refer to the [CHANGELOG.md](CHANGELOG.md) file.
+
 ## Contributions
 
 Contributions are welcome. Please follow these steps:
