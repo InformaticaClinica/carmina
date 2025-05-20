@@ -1,0 +1,146 @@
+# Carmina
+
+Carmina is an application designed for clinical text anonymization and performance comparison between different methods and models. It uses large language models (LLMs) to process and analyze text data, focusing on meddocan guidelines for text anonymization according to European regulations.
+
+## Features
+* Support for multiple LLM providers (OpenAI, Anthropic, Deepseek, Gemini)
+* Configurable data processing pipeline
+* Evaluation of model performance metrics
+* Benchmarking tools to compare different LLMs
+* Compatible with different cloud providers
+
+## Prerequisites
+The project is designed to be executed primarily using Docker Compose, which simplifies dependency management. Alternatively, it can be run in a Python environment. The necessary libraries are listed in `requirements.txt`.
+
+* Python 3.11 or higher (if not using Docker)
+* Docker and Docker Compose (recommended)
+* API keys for the LLM services you wish to use (configured in the `.env` file)
+
+## Installation
+
+The recommended way to install and run Carmina is through Docker Compose.
+
+### Option 1: Using Docker Compose (Recommended)
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/InformaticaClinica/anonimization-benchmark
+    cd hc-carmina
+    ```
+2. Copy the example environment variables file:
+    ```bash
+    cp .env.example .env
+    ```
+3. Edit the `.env` file and add your API keys and other necessary configurations:
+    ```env
+    # Example content for .env
+    OPENAI_API_KEY="your_openai_api_key"
+    ANTHROPIC_API_KEY="your_anthropic_api_key"
+    # Add other necessary configuration variables
+    ```
+    
+    > **Note**: Currently, only one cloud provider can be used at a time. For example, if you configure Azure as a provider, you can only use the models available on that platform.
+
+4. Start the services with Docker Compose:
+    ```bash
+    docker-compose up -d
+    ```
+
+### Option 2: Using Python Virtual Environment
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/InformaticaClinica/anonimization-benchmark
+    cd hc-carmina
+    ```
+2. Copy the example environment variables file:
+    ```bash
+    cp .env.example .env
+    ```
+3. Edit the `.env` file and add your API keys and other necessary configurations.
+4. Create a virtual environment:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    ```
+5. Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## Usage
+
+### With Docker Compose
+Once the services are up with `docker-compose up -d`, the application (currently the `BenchmarkRunner`) will run automatically according to the configuration in `docker-compose.yaml`.
+
+To stop the services:
+```bash
+docker-compose down
+```
+
+### With Python Virtual Environment
+If you've set up a virtual environment, you can run the main application (which currently runs the `BenchmarkRunner`) with:
+```bash
+python main.py
+```
+This will start the benchmarking process configured in `src/carmina/tools/benchmark_runner.py`. The results and logs will be saved in the `data/outputs/` and `logs/` directories respectively.
+
+## Testing
+To verify that the models and application logic work correctly, you can run unit and integration tests using `pytest`. Make sure you have the development dependencies installed (included in `requirements.txt` or available in the Docker development image if defined).
+
+From the project root (with the virtual environment activated or inside the Docker container if configured for development):
+```bash
+pytest
+```
+You can find more details about the tests in `docs/tests.md`.
+
+## Project Structure
+
+```
+hc-carmina/
+├── data/                   # Input and output data
+│   ├── inputs/
+│   └── outputs/
+├── docs/                   # Project documentation
+├── logs/                   # Application log files
+├── src/                    # Application source code
+│   └── carmina/
+│       ├── config.py           # Global configurations
+│       ├── model_executor.py   # Logic for executing LLM models
+│       ├── data_sources/       # Modules for loading and extracting data
+│       ├── llm/                # Abstractions and clients for LLMs
+│       ├── metrics/            # Modules for calculating metrics
+│       ├── pipeline/           # Processing pipeline logic
+│       ├── tools/              # Additional tools (e.g., benchmarking)
+│       └── utils/              # General utilities
+├── tests/                  # Unit, integration, and e2e tests
+├── .env.example            # Template for environment variables
+├── .gitignore
+├── CHANGELOG.md
+├── docker-compose.yaml     # Docker Compose configuration
+├── Dockerfile              # Docker image definition
+├── main.py                 # Main application entry point
+├── pytest.ini              # Pytest configuration
+├── Readme.md               # This file
+└── requirements.txt        # Python dependencies
+```
+
+## Contributions
+
+Contributions are welcome. Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/new-feature`).
+3. Make your changes and commit (`git commit -am 'Add new feature'`).
+4. Push your changes to the branch (`git push origin feature/new-feature`).
+5. Open a Pull Request.
+
+Please make sure your changes pass the tests and follow the project style guidelines.
+
+> **Note**: The testing system is currently under development. Some tests may not pass correctly while we work on their complete implementation.
+
+## License
+
+To be defined
+
+## Contact
+
+Petter Peñafiel / Hospital Clínic de Barcelona (Clinical Informatics Service) - papenafiel@clinic.cat
