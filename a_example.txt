@@ -1,4 +1,0 @@
-Primera línea de A con [**ETIQUETA_A1**]
-Segunda línea de A sin etiquetas.
-Tercera línea de A con [**ETIQUETA_A3**] y [**OTRA_A3**]
-Cuarta línea solo en A [**SOLO_A4**]

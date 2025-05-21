@@ -106,15 +106,25 @@ class AnonymizationPipeline:
                 # Step 3: Run anonymization (labeling or substitution)
                 anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result.get("entities"))
 
+                results_aux = {"identified_text": "", "entities_identified": {}, "anonymized_text": "", "entities_anonymized": {}}
+                if identified_result:
+                    results_aux["identified_text"] = identified_result.get("anonymized_text", "")
+                    results_aux["entities_identified"] = identified_result.get("entities", {})
+                
+                if anonymized_result:
+                    results_aux["anonymized_text"] = anonymized_result.get("anonymized_text", "")
+                    results_aux["entities_anonymized"] = anonymized_result.get("labels", {})
+
+
                 # Step 4: Combine all results into the output
                 output = {
                     **record,
                     "gt_raw_entities": self.identification._get_brackets_entities(record.get('identify', '')),
                     "gt_masked_entities": self.identification._get_brackets_entities(record.get('masked_text', '')),
-                    "identified_text": identified_result.get('anonymized_text', ''),
-                    "entities_identified": identified_result.get('entities', {}),
-                    "anonymized_text": anonymized_result.get('anonymized_text', ''),
-                    "entities_anonymized": anonymized_result.get('labels', {}),
+                    "identified_text": results_aux["identified_text"],
+                    "entities_identified": results_aux["entities_identified"],
+                    "anonymized_text": results_aux["anonymized_text"],
+                    "entities_anonymized": results_aux["entities_anonymized"],
                 }
                 results.append(output)
                 self.processed_count += 1

@@ -1,5 +1,0 @@
-Primera línea de B con [**ETIQUETA_B1**]
-Segunda línea de B con [**ETIQUETA_B2**].
-Tercera línea de B sin etiquetas.
-Cuarta línea solo en B [**SOLO_B4**]
-Quinta línea solo en B [**SOLO_B5**]
