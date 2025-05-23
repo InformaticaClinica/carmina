@@ -5,7 +5,7 @@ from src.carmina.pipeline.anon_pipeline import AnonymizationPipeline
 from src.carmina.llm.factory import LLMFactory
 from src.carmina.metrics.recorder import MetricsRecorder
 from src.carmina.metrics.timer import measure_time
-from src.carmina.metrics.evaluator import evaluate_identification, evaluate_label
+from src.carmina.metrics.compare_line import extract_all_metrics
 
 class ModelExecutor:
     """
@@ -86,35 +86,24 @@ class ModelExecutor:
 
         print(f"✅ Anonymization completed. Results saved ")
         
-        # Evaluate the anonymization results
-        ground_truth_records = [entity["gt_raw_entities"] for entity in anonymized_records]
-        prediction_records = [entity["entities_identified"] for entity in anonymized_records]
+        ground_truth_identity_texts = [entity["identify"] for entity in anonymized_records]
+        prediction_identity_texts = [entity["identified_text"] for entity in anonymized_records]
         ground_truth_texts = [entity["masked_text"] for entity in anonymized_records]
         prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
-        ground_truth_labels = [entity["gt_masked_entities"] for entity in anonymized_records]
-        prediction_labels = [entity["entities_anonymized"] for entity in anonymized_records]
         filenames = [entity["id"] for entity in anonymized_records]
         languages = [self.get_language(entity["id"]) for entity in anonymized_records] #TODO: improve software design
 
         recorder.record_all(
-            evaluate_label(
+            extract_all_metrics(
+                ground_truth_identity_texts=ground_truth_identity_texts,
+                prediction_identity_texts=prediction_identity_texts,
                 ground_truth_texts=ground_truth_texts,
                 prediction_texts=prediction_texts,
-                ground_truth_labels=ground_truth_labels,
-                prediction_labels=prediction_labels,
                 filenames=filenames,
-                language=languages,
-                )
+                languages=languages,
             )
-        recorder.record_all(
-            evaluate_identification(
-                ground_truth_records=ground_truth_records, 
-                prediction_records=prediction_records,
-                filenames=filenames,
-                language=languages,
-                )
-            )
-
+        )
+        
         metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
         recorder.export_to_json(metrics_path)
 
