@@ -86,7 +86,7 @@ def extract_all_metrics(ground_truth_identity_texts,
                         ground_truth_texts, 
                         prediction_texts, 
                         filenames, 
-                        languages):
+                        languages) -> dict:
     """
     Extracts all metrics from the two files and returns them in a dictionary.
 
@@ -115,7 +115,7 @@ def extract_all_metrics(ground_truth_identity_texts,
     data["files"] = result
     data["metrics"]["identify"] = calculate_average_metrics(result, "identify")
     data["metrics"]["label"] = calculate_average_metrics(result, "label")
-    return result
+    return data
 
 
 # Example usage:

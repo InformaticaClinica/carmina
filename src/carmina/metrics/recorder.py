@@ -42,7 +42,7 @@ class MetricsRecorder:
         self.current_metrics[metric_name] = value
         return self
     
-    def record_all(self, metrics_dict: Dict[str, Any]) -> 'MetricsRecorder':
+    def record_all(self, metrics_dict):
         """
         Record multiple metrics at once.
         
@@ -52,7 +52,7 @@ class MetricsRecorder:
         Returns:
             self: For method chaining
         """
-        self.current_metrics.update(metrics_dict)
+        self.current_metrics = metrics_dict
         return self
         
     def set_filename(self, filename: str) -> 'MetricsRecorder':
