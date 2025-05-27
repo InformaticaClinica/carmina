@@ -11,14 +11,22 @@ class TestLlama3_2_3bStrategy:
     def mock_llama_strategy(self):
         """Fixture para una estrategia LLaMA simulada"""
         mock_cloud_provider = MockProvider()
-        strategy = LlamaStrategy(model_name="llama-3.2-3b", cloud_provider=mock_cloud_provider)
+        strategy = LlamaStrategy(
+            model_name="llama-3.2-3b", 
+            cloud_provider=mock_cloud_provider,
+            anonymization_mode="identify"
+        )
         return strategy
     
     @pytest.fixture
     def llama_strategy(self):
         """Fixture para la estrategia de LLaMA"""
         local_cloud_provider = LocalProvider("local", base_url="http://localhost:11434")
-        return LlamaStrategy(model_name="llama-3.2-3b", cloud_provider=local_cloud_provider)
+        return LlamaStrategy(
+            model_name="llama-3.2-3b", 
+            cloud_provider=local_cloud_provider,
+            anonymization_mode="identify"
+        )
 
     def test_init(self, mock_llama_strategy):
         """Test que verifica la inicialización de la estrategia LLaMA"""
@@ -44,8 +52,12 @@ class TestLlama3_2_3bStrategy:
         result = mock_llama_strategy.identify(text1)
         assert result == text1
 
-    def test_local_identification_mode(self, llama_strategy, sample_medical_records):
+    @patch('src.carmina.llm.strategies.llama_strategy.LlamaStrategy.identify')
+    def test_local_identification_mode(self, mock_identify, llama_strategy, sample_medical_records):
         """Test que verifica el modo de identificación"""
+        # Setup the mock to return the expected output
+        mock_identify.return_value = sample_medical_records[0]["anonymized_text"]
+        
         llama_strategy.set_anonymization_mode("identify")
         assert llama_strategy.anonymization_mode == "identify"
         #first test the identify method
@@ -53,4 +65,5 @@ class TestLlama3_2_3bStrategy:
         ground_truth1 = sample_medical_records[0]["anonymized_text"]
         result = llama_strategy.identify(text1)
         assert result == ground_truth1
+        mock_identify.assert_called_once_with(text1)
 

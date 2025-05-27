@@ -11,7 +11,7 @@ class TestIdentificationBenchmark:
     @pytest.fixture
     def mock_identify_strategy(self):
         """Fixture que proporciona una estrategia LLM en modo identification"""
-        strategy = MockLLMStrategy()
+        strategy = MockLLMStrategy(anonymization_mode="identify")
         return strategy
     
     def test_identification_benchmark(self, mock_identify_strategy, sample_medical_records):

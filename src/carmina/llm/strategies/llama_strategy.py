@@ -43,13 +43,45 @@ class LlamaStrategy(BaseLLMStrategy):
             raise ValueError(f"Unsupported {self.provider_name} provider type for identification")
 
     def batch_identify(self, texts: List[str], **kwargs) -> List[str]:
-        pass
+        """
+        Process multiple texts in batch for identification.
+        """
+        results = []
+        for text in texts:
+            result = self.identify(text, **kwargs)
+            results.append(result)
+        return results
 
     def get_context_window(self) -> int:
         return self._context_windows.get(self.model_name, 4096)
 
     def count_tokens(self, text: str) -> int:
-        pass
+        """
+        Count the number of tokens in the given text.
+        For Llama models, this is an approximation.
+        """
+        # Simple approximation: 1 token ≈ 4 characters
+        return len(text) // 4
+
+    def run_inference(self, messages, inference_params) -> str:
+        """
+        Run inference using the configured cloud provider.
+        """
+        if self.provider_name == "local" or self.provider_name == "mock":
+            response = self.cloud_provider.run_inference(
+                model_id=self.model_name,
+                messages=messages,
+                inference_params=inference_params
+            )
+            return response
+        else:
+            raise ValueError(f"Unsupported {self.provider_name} provider type for LlamaStrategy")
 
     def process_for_anonymization(self, text: str, strategy: str) -> Dict[str, Any]:
-        pass
+        """
+        Process text for anonymization using the specified strategy.
+        """
+        messages = self.get_message(strategy, text)
+        inference_params = self.get_inference_params()
+        result = self.run_inference(messages, inference_params)
+        return result

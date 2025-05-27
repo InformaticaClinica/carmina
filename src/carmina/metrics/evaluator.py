@@ -105,6 +105,111 @@ def get_all_metrics(tags_a: List[str], tags_b: List[str]) -> Dict[str, Any]:
     return metrics
 
 
+def evaluate_identification(ground_truth_records: List[str], 
+                           prediction_records: List[str]) -> Dict[str, float]:
+    """
+    Evaluate PHI identification performance.
+    
+    Args:
+        ground_truth_records: List of ground truth identified entities
+        prediction_records: List of predicted identified entities
+        
+    Returns:
+        Dict[str, float]: Dictionary of identification metrics
+    """
+    # Use the existing evaluate_array function
+    result = evaluate_array(ground_truth_records, prediction_records)
+    
+    # Return metrics with the expected prefixes for identification
+    return {
+        "identification_precision": result["precision"],
+        "identification_recall": result["recall"],
+        "identification_f1": result["f1"],
+        "identification_tp": result["tp"],
+        "identification_fp": result["fp"],
+        "identification_fn": result["fn"]
+    }
+
+
+def evaluate_label(ground_truth_texts: List[str], 
+                  prediction_texts: List[str],
+                  ground_truth_labels: List[List[str]],
+                  prediction_labels: List[List[str]]) -> Dict[str, float]:
+    """
+    Evaluate text label quality.
+    
+    Args:
+        ground_truth_texts: List of ground truth texts
+        prediction_texts: List of predicted texts
+        ground_truth_labels: List of ground truth labels (list of lists)
+        prediction_labels: List of predicted labels (list of lists)
+        
+    Returns:
+        Dict[str, float]: Dictionary of label metrics
+    """
+    total_cosine = 0.0
+    total_levenshtein = 0.0
+    total_inv_levenshtein = 0.0
+    total_precision = 0.0
+    total_recall = 0.0
+    total_f1 = 0.0
+    total_tp = 0
+    total_fp = 0
+    total_fn = 0
+    count = len(ground_truth_texts)
+    
+    for i in range(count):
+        # Text similarity metrics
+        if i < len(prediction_texts):
+            total_cosine += calculate_cosine_similarity(ground_truth_texts[i], prediction_texts[i])
+            total_levenshtein += calculate_levenshtein_distance(ground_truth_texts[i], prediction_texts[i])
+            total_inv_levenshtein += calculate_inverse_levenshtein(
+                calculate_levenshtein_distance(ground_truth_texts[i], prediction_texts[i])
+            )
+        
+        # Label classification metrics
+        if i < len(ground_truth_labels) and i < len(prediction_labels):
+            gt_labels = ground_truth_labels[i] if isinstance(ground_truth_labels[i], list) else [ground_truth_labels[i]]
+            pred_labels = prediction_labels[i] if isinstance(prediction_labels[i], list) else [prediction_labels[i]]
+            
+            result = evaluate_array(gt_labels, pred_labels)
+            total_precision += result["precision"]
+            total_recall += result["recall"]
+            total_f1 += result["f1"]
+            total_tp += result["tp"]
+            total_fp += result["fp"]
+            total_fn += result["fn"]
+    
+    # Calculate averages
+    if count > 0:
+        avg_cosine = total_cosine / count
+        avg_levenshtein = total_levenshtein / count
+        avg_inv_levenshtein = total_inv_levenshtein / count
+        avg_precision = total_precision / count
+        avg_recall = total_recall / count
+        avg_f1 = total_f1 / count
+        avg_tp = total_tp / count
+        avg_fp = total_fp / count
+        avg_fn = total_fn / count
+    else:
+        avg_cosine = avg_levenshtein = avg_inv_levenshtein = 0
+        avg_precision = avg_recall = avg_f1 = 0
+        avg_tp = avg_fp = avg_fn = 0
+    
+    return {
+        "label_cosine_sim": avg_cosine,
+        "label_levenshtein": avg_levenshtein,
+        "label_inv_levenshtein": avg_inv_levenshtein,
+        "label_precision": avg_precision,
+        "label_recall": avg_recall,
+        "label_f1": avg_f1,
+        "label_overall": avg_cosine + avg_inv_levenshtein + avg_f1 + avg_precision + avg_recall,
+        "label_tp": avg_tp,
+        "label_fp": avg_fp,
+        "label_fn": avg_fn
+    }
+
+
 # def evaluate_identification(ground_truth_records: List[List[str]], 
 #                            prediction_records: List[List[str]],
 #                            filenames: List[str],

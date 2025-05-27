@@ -2,6 +2,20 @@ import pytest
 import os
 from unittest.mock import MagicMock
 
+@pytest.fixture(autouse=True)
+def clear_anonymization_mode_env():
+    """Fixture to temporarily clear ANONYMIZATION_MODE environment variable for tests"""
+    original_value = os.environ.get("ANONYMIZATION_MODE")
+    # Remove the environment variable for tests
+    if "ANONYMIZATION_MODE" in os.environ:
+        del os.environ["ANONYMIZATION_MODE"]
+    
+    yield
+    
+    # Restore the original value after the test
+    if original_value is not None:
+        os.environ["ANONYMIZATION_MODE"] = original_value
+
 @pytest.fixture
 def cloud_credentials():
     """Fixture providing cloud provider credentials from environment"""

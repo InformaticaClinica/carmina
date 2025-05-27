@@ -32,7 +32,7 @@ class BaseLLMStrategy(ABC):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
-        self.anonymization_mode =  os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode")
+        self.anonymization_mode =  os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode", "identify")
         self.temperature = float(os.environ.get("TEMPERATURE") or kwargs.get("temperature", 1.0))
         self.max_tokens = int(os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500))
         self.top_p = float(os.environ.get("TOP_P") or kwargs.get("top_p", 1.0))

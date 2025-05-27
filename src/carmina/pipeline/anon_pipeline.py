@@ -104,7 +104,7 @@ class AnonymizationPipeline:
                 identified_result = self.identify(text)
 
                 # Step 3: Run anonymization (labeling or substitution)
-                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result.get("entities"))
+                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result)
 
                 results_aux = {"identified_text": "", "entities_identified": {}, "anonymized_text": "", "entities_anonymized": {}}
                 if identified_result:
@@ -113,7 +113,7 @@ class AnonymizationPipeline:
                 
                 if anonymized_result:
                     results_aux["anonymized_text"] = anonymized_result.get("anonymized_text", "")
-                    results_aux["entities_anonymized"] = anonymized_result.get("labels", {})
+                    results_aux["entities_anonymized"] = anonymized_result.get("entities", [])
 
 
                 # Step 4: Combine all results into the output

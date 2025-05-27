@@ -9,7 +9,7 @@ class TestLabelPipeline:
     @pytest.fixture
     def mock_label_strategy(self):
         """Fixture that provides a LLM strategy in label mode"""
-        strategy = MockLLMStrategy()
+        strategy = MockLLMStrategy(anonymization_mode="label")
         return strategy
     
     def test_label_pipeline_init(self, mock_label_strategy):

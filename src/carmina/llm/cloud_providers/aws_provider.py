@@ -168,18 +168,14 @@ class AWSProvider(BaseCloudProvider):
                 }
                 
                 # Diferentes formatos para diferentes versiones de Claude
-                if is_claude_3_7_plus:
-                    # Para Claude 3.7+: system es un parámetro de nivel superior
-                    system_messages = [msg for msg in messages if msg.get("role") == "system"]
-                    user_messages = [msg for msg in messages if msg.get("role") != "system"]
-                    
-                    if system_messages:
-                        request_body["system"] = system_messages[0].get("content", "")
-                    
-                    request_body["messages"] = user_messages
-                else:
-                    # Para Claude versiones anteriores: system es un role dentro de messages
-                    request_body["messages"] = messages
+                # All Claude models in AWS Bedrock use system as a top-level parameter
+                system_messages = [msg for msg in messages if msg.get("role") == "system"]
+                user_messages = [msg for msg in messages if msg.get("role") != "system"]
+                
+                if system_messages:
+                    request_body["system"] = system_messages[0].get("content", "")
+                
+                request_body["messages"] = user_messages
                     
             elif "meta.llama" in model_id:
                 # Format for Llama models
