@@ -15,6 +15,7 @@ from src.carmina.llm.strategies.deepseek_strategy import DeepSeekStrategy
 from src.carmina.llm.strategies.gemini_strategy import GeminiStrategy
 from src.carmina.llm.strategies.openai_strategy import OpenAIStrategy
 from src.carmina.llm.strategies.llama_strategy import LlamaStrategy
+from src.carmina.llm.strategies.llama3_strategy import Llama3Strategy
 from src.carmina.llm.strategies.qwen_strategy import QwenStrategy
 #from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 from src.carmina.llm.strategies.mock_strategy import MockLLMStrategy
@@ -29,6 +30,7 @@ class LLMFactory:
         "anthropic": AnthropicStrategy,
         "deepseek": DeepSeekStrategy,
         "gemini": GeminiStrategy,
+        "llama-3.3": Llama3Strategy,
         "llama": LlamaStrategy,
         "qwen": QwenStrategy,
         "gemma": GeminiStrategy,

@@ -179,10 +179,27 @@ class AWSProvider(BaseCloudProvider):
                     
             elif "meta.llama" in model_id:
                 # Format for Llama models
+                messages_list = messages.get("messages", [])
+                # Convert messages to prompt format for Llama
+                prompt_parts = []
+                for msg in messages_list:
+                    role = msg.get("role", "")
+                    content = msg.get("content", "")
+                    if role == "system":
+                        prompt_parts.append(f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n{content}<|eot_id|>")
+                    elif role == "user":
+                        prompt_parts.append(f"<|start_header_id|>user<|end_header_id|>\n{content}<|eot_id|>")
+                    elif role == "assistant":
+                        prompt_parts.append(f"<|start_header_id|>assistant<|end_header_id|>\n{content}<|eot_id|>")
+                
+                prompt_parts.append("<|start_header_id|>assistant<|end_header_id|>")
+                prompt = "".join(prompt_parts)
+                
                 request_body = {
-                    "prompt": messages.get("prompt", ""),
-                    "max_gen_len": inference_params.get("max_tokens"),
-                    "temperature": inference_params.get("temperature"),
+                    "prompt": prompt,
+                    "max_gen_len": inference_params.get("max_tokens", 2048),
+                    "temperature": inference_params.get("temperature", 0.6),
+                    "top_p": inference_params.get("top_p", 0.9),
                 }
             elif "mistral" in model_id:
                 # Format for Mistral models
