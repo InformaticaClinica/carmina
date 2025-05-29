@@ -14,6 +14,8 @@ class LlamaStrategy(BaseLLMStrategy):
     _context_windows = {
         "llama-3.2-1b": 8192,
         "llama-3.2-3b": 8192,
+        "llama-3.3-70b": 131072, 
+
     }
 
     def __init__(self, model_name, cloud_provider, **kwargs):
@@ -25,7 +27,7 @@ class LlamaStrategy(BaseLLMStrategy):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text}
         ]
-        if self.provider_name == "local" or self.provider_name == "mock":
+        if self.provider_name in ["aws", "mock", "local", "mock_ollama"]:
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
@@ -67,7 +69,7 @@ class LlamaStrategy(BaseLLMStrategy):
         """
         Run inference using the configured cloud provider.
         """
-        if self.provider_name == "local" or self.provider_name == "mock":
+        if self.provider_name in ["aws", "mock", "local", "mock_ollama"]:
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,

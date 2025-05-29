@@ -31,6 +31,9 @@ def load_directory(dir_path: str) -> List[Dict[str, Any]]:
     text_ann_path = os.path.join(dir_path, 'txt', 'ann/')
     txt_identify_path = os.path.join(dir_path, 'txt', 'identify/')
     
+    if os.getenv('ANONYMIZATION_MODE') == 'substitute':
+            return _load_directory(dir_path)
+
     if not os.path.exists(txt_identify_path):
         _create_identify_format(txt_raw_path, text_ann_path, txt_identify_path)
 
@@ -153,4 +156,22 @@ def _load_all_formats(txt_raw_path: str, txt_masked_path: str, txt_identify_path
             'labels': labels
         })
     
+    return records
+
+def _load_directory(directory_path: str) -> List[Dict[str, Any]]:
+    """
+    Loads all records from a directory containing text files.
+    
+    Args:
+        directory_path (str): Path to the directory.
+        
+    Returns:
+        List[Dict[str, Any]]: List of records loaded from text files in the directory.
+    """
+    records = []
+    
+    for filename in sorted(os.listdir(directory_path)):
+        if filename.endswith('.txt'):
+            file_path = os.path.join(directory_path, filename)
+            records.extend(load_txt_file(file_path))
     return records

@@ -58,6 +58,7 @@ def load_csv_file(file_path: str) -> List[Dict[str, Any]]:
         raise DataLoadError(f"Failed to load CSV file {file_path}: {str(e)}")
 
 
+
 def load_txt_file(file_path: str) -> List[Dict[str, Any]]:
     """
     Loads a single record from a text file.

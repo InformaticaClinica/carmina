@@ -179,7 +179,8 @@ class AWSProvider(BaseCloudProvider):
                     
             elif "meta.llama" in model_id:
                 # Format for Llama models
-                messages_list = messages.get("messages", [])
+                
+                messages_list = messages
                 # Convert messages to prompt format for Llama
                 prompt_parts = []
                 for msg in messages_list:
@@ -219,6 +220,7 @@ class AWSProvider(BaseCloudProvider):
             
             # Parse and return the response
             response_body = json.loads(response.get('body').read())
+            response_body = response_body.get('generation', {})
             return response_body
             
         except ClientError as e:
