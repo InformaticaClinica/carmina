@@ -36,17 +36,11 @@ class SubstitutionProcessor(BaseProcessor):
             # Call the LLM strategy to anonymize the text with substitutions
             result = self.llm_strategy.process_for_anonymization(text, "substitute")
             
-            # Extract substitution mapping
-            substitution_map = result.get("substitution_map", {})
-            
             # Extract labels for evaluation
-            labels = self._extract_substitution_labels(substitution_map)
+            # labels = self._extract_substitution_labels(result)
             
             return {
-                "anonymized_text": result.get("anonymized_text", ""),
-                "entities": result.get("entities", entities),
-                "substitution_map": substitution_map,
-                "labels": labels
+                "anonymized_text": result,
             }
             
         except Exception as e:

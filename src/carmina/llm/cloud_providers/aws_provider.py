@@ -8,9 +8,13 @@ through AWS services like Amazon Bedrock.
 import os
 import json
 import boto3
+import time
+import random
 from typing import Dict, Any, Optional, List
 import logging
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ReadTimeoutError
+from botocore.config import Config
+from urllib3.exceptions import ReadTimeoutError as Urllib3ReadTimeoutError
 
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
@@ -50,14 +54,45 @@ class AWSProvider(BaseCloudProvider):
         self.session_token = os.environ.get("AWS_SESSION_TOKEN") or kwargs.get("session_token", None)
         self.profile = os.environ.get("AWS_PROFILE") or kwargs.get("profile", None)
         
-        # Initialize clients
+        # Rate limiting and retry configuration
+        self.max_retries = int(os.environ.get("AWS_MAX_RETRIES", "5"))
+        self.base_delay = float(os.environ.get("AWS_BASE_DELAY", "2.0"))  # Increased from 1.0
+        self.max_delay = float(os.environ.get("AWS_MAX_DELAY", "120.0"))  # Increased from 60.0
+        self.request_delay = float(os.environ.get("AWS_REQUEST_DELAY", "1.0"))  # Increased from 0.1
+        
+        # Timeout configuration
+        self.read_timeout = int(os.environ.get("AWS_READ_TIMEOUT", "120"))  # 2 minutes
+        self.connect_timeout = int(os.environ.get("AWS_CONNECT_TIMEOUT", "60"))  # 1 minute
+        
+        # Initialize clients with custom config
         self.session = self._create_session()
-        self.bedrock_runtime = self.session.client(
-            service_name="bedrock-runtime",
-            region_name=self.region
-        )
+        self.bedrock_runtime = self._create_bedrock_client()
+        
         # Service flags
         self._is_initialized = False
+    
+    def _create_bedrock_client(self):
+        """
+        Create Bedrock client with custom timeout and retry configuration.
+        
+        Returns:
+            Configured Bedrock runtime client
+        """
+        config = Config(
+            region_name=self.region,
+            retries={
+                'max_attempts': 1,  # We handle retries manually
+                'mode': 'standard'
+            },
+            read_timeout=self.read_timeout,
+            connect_timeout=self.connect_timeout,
+            max_pool_connections=50
+        )
+        
+        return self.session.client(
+            service_name="bedrock-runtime",
+            config=config
+        )
     
     def connect(self) -> str:
         """
@@ -67,14 +102,19 @@ class AWSProvider(BaseCloudProvider):
             Connection status message
         """
         try:
-            # Attempt to list available models as a test of connectivity
-            self.session.client(
+            # Create a bedrock client for testing connectivity
+            bedrock_client = self.session.client(
                 service_name="bedrock",
-                region_name=self.region
-            ).list_foundation_models()
+                region_name=self.region,
+                config=Config(
+                    read_timeout=30,
+                    connect_timeout=10
+                )
+            )
+            bedrock_client.list_foundation_models()
             self._is_initialized = True
             return "Connected to AWS API"
-        except ClientError as e:
+        except (ClientError, ReadTimeoutError, Urllib3ReadTimeoutError) as e:
             logging.error(f"Connection error: {str(e)}")
             raise
 
@@ -127,6 +167,81 @@ class AWSProvider(BaseCloudProvider):
             f"Supported models: {', '.join(self._bedrock_model_ids.keys())}"
         )
     
+    def _retry_with_backoff(self, func, *args, **kwargs):
+        """
+        Execute a function with exponential backoff retry logic for ThrottlingException and timeouts.
+        
+        Args:
+            func: Function to execute
+            *args: Arguments for the function
+            **kwargs: Keyword arguments for the function
+            
+        Returns:
+            Function result
+            
+        Raises:
+            Exception: If all retries are exhausted
+        """
+        last_exception = None
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                # Add a delay before each attempt (including the first one for rate limiting)
+                if attempt > 0:
+                    # Exponential backoff for retries
+                    delay = min(
+                        self.base_delay * (2 ** (attempt - 1)) + random.uniform(0, 1),
+                        self.max_delay
+                    )
+                    logging.warning(f"Waiting {delay:.2f} seconds before retry attempt {attempt + 1}")
+                    time.sleep(delay)
+                else:
+                    # Small delay even on first attempt to avoid rate limiting
+                    time.sleep(self.request_delay)
+                
+                return func(*args, **kwargs)
+                
+            except (ClientError, ReadTimeoutError, Urllib3ReadTimeoutError) as e:
+                last_exception = e
+                
+                # Handle different types of errors
+                if isinstance(e, ClientError):
+                    error_code = e.response.get('Error', {}).get('Code', '')
+                    if error_code == 'ThrottlingException' and attempt < self.max_retries:
+                        logging.warning(
+                            f"ThrottlingException on attempt {attempt + 1}/{self.max_retries + 1}. "
+                            f"Will retry..."
+                        )
+                        continue
+                    else:
+                        # Re-raise non-throttling ClientErrors or if max retries exceeded
+                        if attempt == self.max_retries:
+                            logging.error(f"Max retries exceeded for ClientError: {error_code}")
+                        raise
+                        
+                elif isinstance(e, (ReadTimeoutError, Urllib3ReadTimeoutError)) and attempt < self.max_retries:
+                    logging.warning(
+                        f"Read timeout on attempt {attempt + 1}/{self.max_retries + 1}. "
+                        f"Will retry with longer timeout..."
+                    )
+                    # Recreate client with longer timeout for next attempt
+                    self.read_timeout = min(self.read_timeout * 1.5, 300)  # Max 5 minutes
+                    self.bedrock_runtime = self._create_bedrock_client()
+                    continue
+                else:
+                    # Re-raise timeout errors if max retries exceeded
+                    if attempt == self.max_retries:
+                        logging.error("Max retries exceeded for timeout error")
+                    raise
+                    
+            except Exception as e:
+                # Re-raise other exceptions immediately
+                logging.error(f"Unexpected error: {str(e)}")
+                raise
+        
+        # If we get here, all retries were exhausted
+        raise last_exception
+    
     def run_inference(
         self,
         model_id: str,
@@ -155,20 +270,16 @@ class AWSProvider(BaseCloudProvider):
             
             # Format the request according to the provider's requirements
             if "anthropic" in model_id:
-                # Determinar si es Claude 3.7 o superior
-                is_claude_3_7_plus = "claude-3-7" in model_id.lower() or "claude-3.7" in model_id.lower()
-                
                 messages = messages.get("messages", [])
                 
                 # Format for Claude models
                 request_body = {
                     "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": int(inference_params.get("max_tokens")),
-                    "temperature": float(inference_params.get("temperature")),
+                    "max_tokens": int(inference_params.get("max_tokens", 4096)),
+                    "temperature": float(inference_params.get("temperature", 0.1)),
                 }
                 
-                # Diferentes formatos para diferentes versiones de Claude
-                # All Claude models in AWS Bedrock use system as a top-level parameter
+                # Separate system and user messages
                 system_messages = [msg for msg in messages if msg.get("role") == "system"]
                 user_messages = [msg for msg in messages if msg.get("role") != "system"]
                 
@@ -178,8 +289,6 @@ class AWSProvider(BaseCloudProvider):
                 request_body["messages"] = user_messages
                     
             elif "meta.llama" in model_id:
-                # Format for Llama models
-                
                 messages_list = messages
                 # Convert messages to prompt format for Llama
                 prompt_parts = []
@@ -206,28 +315,33 @@ class AWSProvider(BaseCloudProvider):
                 # Format for Mistral models
                 request_body = {
                     "prompt": messages.get("prompt", ""),
-                    "max_tokens": inference_params.get("max_tokens"),
-                    "temperature": inference_params.get("temperature"),
+                    "max_tokens": inference_params.get("max_tokens", 2048),
+                    "temperature": inference_params.get("temperature", 0.6),
                 }
             else:
                 raise ValueError(f"Unsupported model format: {model_id}")
-            logging.debug(f"Request body for {model_id}: {json.dumps(request_body)}")
-            # Make the actual API call
-            response = self.bedrock_runtime.invoke_model(
-                modelId=model_id,
-                body=json.dumps(request_body)
-            )
             
-            # Parse and return the response
+            logging.debug(f"Request body for {model_id}: {json.dumps(request_body, indent=2)}")
+            
+            # Make the actual API call with retry logic
+            def _invoke_model():
+                return self.bedrock_runtime.invoke_model(
+                    modelId=model_id,
+                    body=json.dumps(request_body)
+                )
+            
+            response = self._retry_with_backoff(_invoke_model)
             response_body = json.loads(response.get('body').read())
-            response_body = response_body.get('generation', {})
             return response_body
             
-        except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code', '')
-            if error_code == 'ValidationException':
-                logging.error(f"Request validation error: {str(e)}")
-                logging.error(f"Request body was: {json.dumps(request_body)}")
+        except (ClientError, ReadTimeoutError, Urllib3ReadTimeoutError) as e:
+            if isinstance(e, ClientError):
+                error_code = e.response.get('Error', {}).get('Code', '')
+                if error_code == 'ValidationException':
+                    logging.error(f"Request validation error: {str(e)}")
+                    logging.error(f"Request body was: {json.dumps(request_body, indent=2)}")
+            else:
+                logging.error(f"Timeout error: {str(e)}")
             raise
     
     def batch_process(
@@ -237,7 +351,7 @@ class AWSProvider(BaseCloudProvider):
         inference_params: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Process multiple inputs in batch mode.
+        Process multiple inputs in batch mode with aggressive rate limiting.
         
         Args:
             model_name: Name of the model to use
@@ -248,13 +362,48 @@ class AWSProvider(BaseCloudProvider):
             List of model responses
         """
         results = []
-        for messages in batch_inputs:
+        total_inputs = len(batch_inputs)
+        
+        # More aggressive rate limiting for batch processing
+        batch_delay = max(self.request_delay * 2, 2.0)  # Minimum 2 seconds between requests
+        
+        for i, messages in enumerate(batch_inputs):
             try:
-                result = self.run_inference(model_name, messages, inference_params)
+                logging.info(f"Processing batch item {i + 1}/{total_inputs}")
+                result = self.run_inference(model_name, messages, inference_params=inference_params)
                 results.append(result)
+                
+                # Add delay between batch requests
+                if i < total_inputs - 1:  # Don't wait after the last request
+                    logging.info(f"Waiting {batch_delay:.1f} seconds before next request...")
+                    time.sleep(batch_delay)
+                    
+            except (ClientError, ReadTimeoutError, Urllib3ReadTimeoutError) as e:
+                if isinstance(e, ClientError):
+                    error_code = e.response.get('Error', {}).get('Code', '')
+                    error_msg = f"AWS API error ({error_code}): {str(e)}"
+                else:
+                    error_code = "TimeoutError"
+                    error_msg = f"Timeout error: {str(e)}"
+                    
+                logging.error(f"Batch processing error for input {i + 1}: {error_msg}")
+                results.append({"error": error_msg, "error_code": error_code})
+                
+                # Add extra delay after an error
+                if i < total_inputs - 1:
+                    error_delay = batch_delay * 2
+                    logging.info(f"Error occurred, waiting {error_delay:.1f} seconds before next request...")
+                    time.sleep(error_delay)
+                    
             except Exception as e:
-                # Log error and continue with other items
-                logging.error(f"Batch processing error for input: {e}")
-                results.append({"error": str(e)})
+                error_msg = f"Unexpected error: {str(e)}"
+                logging.error(f"Batch processing error for input {i + 1}: {error_msg}")
+                results.append({"error": error_msg})
+                
+                # Add extra delay after an unexpected error
+                if i < total_inputs - 1:
+                    error_delay = batch_delay * 2
+                    logging.info(f"Unexpected error occurred, waiting {error_delay:.1f} seconds before next request...")
+                    time.sleep(error_delay)
         
         return results

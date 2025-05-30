@@ -34,5 +34,9 @@
             <input>Trabaja como [**profesor**] y reside en [**Madrid**]. Última consulta: [**20/11/2020**].</input>
             <output>Trabaja como [**ingeniero**] y reside en [**Valencia**]. Última consulta: [**20/11/2020**].</output>
         </example>
+        <example>
+            <input>NHC: [**5361899**] Inicio/Inici: [**05.02.2025**] UO Enf.: [**PLANTA 6 D'URG**].<input>
+            <output>NHC: [**5361899**] Inicio/Inici: [**05.02.2025**] UO Enf.: [**PLANTA 3 DE URGENCIAS**].</output>
+        </example>
     </examples>
 </prompt>

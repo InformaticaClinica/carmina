@@ -80,8 +80,8 @@ class ModelExecutor:
         with measure_time("anon_pipeline_time", recorder):
             anonymized_records = pipeline.run(records)
 
-        output_path = os.path.join(self.output_dir, f"output_{self.model_name}.json")
-        with open(output_path, "w", encoding="utf-8") as f:
+        debug_path = os.path.join(self.debug_dir, f"output_{self.model_name}.json")
+        with open(debug_path, "w", encoding="utf-8") as f:
             json.dump(anonymized_records, f, indent=2)
 
         print(f"✅ Anonymization completed. Results saved ")

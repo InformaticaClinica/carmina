@@ -14,7 +14,7 @@ class LlamaStrategy(BaseLLMStrategy):
     _context_windows = {
         "llama-3.2-1b": 8192,
         "llama-3.2-3b": 8192,
-        "llama-3.3-70b": 131072, 
+        "llama-3.3-70b": 131072,
 
     }
 
@@ -75,6 +75,8 @@ class LlamaStrategy(BaseLLMStrategy):
                 messages=messages,
                 inference_params=inference_params
             )
+            if self.provider_name == "aws":
+                return response.get('generation', {})
             return response
         else:
             raise ValueError(f"Unsupported {self.provider_name} provider type for LlamaStrategy")
