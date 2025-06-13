@@ -1,6 +1,6 @@
 import os
-import logging
-
+import logging 
+logger = logging.getLogger(__name__)
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.model_config import MODEL_CONFIGS
@@ -13,6 +13,13 @@ class AnthropicStrategy(BaseLLMStrategy):
     _context_windows = {
         "claude-3.5-sonnet": 200000,
         "claude-3.7-sonnet": 220000,
+        "claude-4-sonnet": 200000,
+        "claude-4-opus":22000,
+        "claude-3.5-sonnet-v2":20000,
+        "claude-3.5-haiku":200000,
+        "claude-3-sonnet":200000,
+        
+        
     }
     
     def __init__(self, model_name: str, cloud_provider: BaseCloudProvider, **kwargs):

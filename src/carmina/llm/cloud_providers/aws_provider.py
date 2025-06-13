@@ -31,13 +31,22 @@ class AWSProvider(BaseCloudProvider):
         # Anthropic Claude models
         "claude-3.5-haiku": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
         "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+        "claude-4-sonnet": "us.anthropic.claude-sonnet-4-20250514-v1:0", #no funciona
+        "claude-3.5-sonnet":"us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "claude-3.5-sonnet-v2":"us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "claude-4-opus": "us.anthropic.claude-opus-4-20250514-v1:0", #no funciona
+        "claude-3-haiku":"us.anthropic.claude-3-haiku-20240307-v1:0",
+        "claude-3-sonnet":"us.anthropic.claude-3-sonnet-20240229-v1:0",
+
         
         # LLama models
         "llama-3.3-70b": "us.meta.llama3-3-70b-instruct-v1:0",
         "llama-3.1-70b": "us.meta.llama3-1-70b-instruct-v1:0",
-        
+        "llama-3.2-1b": "us.meta.llama3-2-1b-instruct-v1:0",
+        "llama-3.2-3b": "us.meta.llama3-2-3b-instruct-v1:0", 
         # Other models
-        "mistral-7b": "",
+        "mistral-7b": "mistral.mistral-7b-instruct-v0:2",
+        "mistral-large":"mistral.mistral-large-2402-v1:0",
     }
     
     def __init__(self, name:str = "aws", **kwargs):
@@ -307,22 +316,32 @@ class AWSProvider(BaseCloudProvider):
                 
                 request_body = {
                     "prompt": prompt,
-                    "max_gen_len": inference_params.get("max_tokens", 2048),
+                    "max_gen_len": inference_params.get("max_tokens", 2000),
                     "temperature": inference_params.get("temperature", 0.6),
                     "top_p": inference_params.get("top_p", 0.9),
                 }
-            elif "mistral" in model_id:
-                # Format for Mistral models
+            elif "mistral-large" in model_id:
+                # New Mistral Large format (role-based)
                 request_body = {
-                    "prompt": messages.get("prompt", ""),
-                    "max_tokens": inference_params.get("max_tokens", 2048),
+                    "messages": messages,
                     "temperature": inference_params.get("temperature", 0.6),
+                    "top_p": inference_params.get("top_p", 0.9),
+                    "max_tokens": inference_params.get("max_tokens", 2048),
                 }
-            else:
-                raise ValueError(f"Unsupported model format: {model_id}")
-            
+            elif "mistral" in model_id:
+                # Mistral 7B expects a simple prompt format
+                messages_list = messages if isinstance(messages, list) else []
+                system = next((m["content"] for m in messages_list if m.get("role") == "system"), "")
+                user = next((m["content"] for m in messages_list if m.get("role") == "user"), "")
+                
+                prompt = f"[INST] {system}\n{user} [/INST]"
+                request_body = {
+                    "prompt": prompt,
+                    "max_tokens": inference_params.get("max_tokens", 2048),
+                    "temperature": inference_params.get("temperature", 0.6)
+                }   
             logging.debug(f"Request body for {model_id}: {json.dumps(request_body, indent=2)}")
-            
+                    
             # Make the actual API call with retry logic
             def _invoke_model():
                 return self.bedrock_runtime.invoke_model(

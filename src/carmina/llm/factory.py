@@ -18,6 +18,7 @@ from src.carmina.llm.strategies.llama_strategy import LlamaStrategy
 from src.carmina.llm.strategies.qwen_strategy import QwenStrategy
 #from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 from src.carmina.llm.strategies.mock_strategy import MockLLMStrategy
+from src.carmina.llm.strategies.mistral_strategy import MistralStrategy
 
 class LLMFactory:
     """Factory for creating LLM strategy instances with cloud provider integration."""
@@ -34,6 +35,7 @@ class LLMFactory:
         "gemma": GeminiStrategy,
         # "mistral": HuggingFaceStrategy,
         "mock": MockLLMStrategy,
+        "mistral":MistralStrategy
     }
 
     @classmethod

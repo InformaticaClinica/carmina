@@ -67,7 +67,7 @@ class GeminiStrategy(BaseLLMStrategy):
             raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")
 
     def identify(self, text, **kwargs):
-        message = self.get_message(text)
+        message = self.get_message("identify", text) #preguntar
         inference_params = self.get_inference_params()
         return self.run_inference(
             messages=message,

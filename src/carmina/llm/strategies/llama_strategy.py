@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict, Any
-
+import logging 
+logger = logging.getLogger(__name__)
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
@@ -39,6 +40,8 @@ class LlamaStrategy(BaseLLMStrategy):
                     "presence_penalty": self.presence_penalty
                 }
             )
+            if self.provider_name=="aws":
+                return response.get("generation",).strip()
             # LocalProvider already extracts the message content, so just return it
             return response
         else:
