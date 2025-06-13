@@ -1,4 +1,6 @@
 import os
+import logging 
+logger = logging.getLogger(__name__)
 
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
@@ -21,7 +23,20 @@ class DeepSeekStrategy(BaseLLMStrategy):
     def run_inference(self, messages, inference_params) -> str:
         inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
         if self.provider_name == "aws":
-            raise NotImplementedError(f"Provider {self.provider_name} not implemented for DeepSeek.")
+            response = self.cloud_provider.run_inference(
+                model_id=self.model_name,
+                messages=messages,
+                inference_params=inference_params
+            )
+            response=response["choices"][0]["message"]["content"]
+            return self.adapt_respose(response)
+        if self.provider_name == "local":
+            response = self.cloud_provider.run_inference(
+                model_id=self.model_name,
+                messages=messages,
+                inference_params=inference_params
+            )
+            return self.adapt_respose(response)
         elif self.provider_name == "azure" or self.provider_name == "mock":
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
@@ -29,6 +44,7 @@ class DeepSeekStrategy(BaseLLMStrategy):
                 **inference_params
             )
             return self.adapt_respose(response)
+        
         else:
             raise NotImplementedError(f"Provider {self.provider_name} not implemented for DeepSeek.")
     
@@ -71,11 +87,11 @@ class DeepSeekStrategy(BaseLLMStrategy):
         pass
 
     def adapt_respose(self, response):
-        if self.model_name == "deepseek-r1":
+        if "deepseek-r1" in self.model_name:
             idx = response.find("</think>")
             if idx != -1:
                 # deepseek adds a few newlines so we remove them as well
                 response = response[idx + 8:].lstrip()
-            return response
+            return response.strip()
         elif self.model_name == "deepseek-v3":
             return response

@@ -4,7 +4,8 @@ Entity identification processor.
 This processor identifies sensitive information in text using the LLM.
 """
 
-import logging
+import logging 
+logger = logging.getLogger(__name__)
 import re
 from typing import Dict, Any, List
 from src.carmina.pipeline.processors.base_processor import BaseProcessor

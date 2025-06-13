@@ -1,20 +1,35 @@
 version: '3.8'
 
 services:
+  #ollama:
+    #image: ollama/ollama
+    #container_name: ollama
+    #ports:
+      #- "11434:11434"
+    #volumes:
+      #- ollama_data:/root/.ollama
+
   app:
     build: .
     container_name: carmina_app
     env_file:
       - .env
-    volumes :
+    ports:
+      - "5007:5007"
+    volumes:
       - .:/app
     working_dir: /app
+    #command: >
+      #sh -c "sleep 120 && python main.py"
     command: python main.py
-    # networks:
-      # - anon_network
+    #depends_on:
+      #- ollama
+
+#volumes:
+  #ollama_data:
 
 
-  # Servidor de métricas 
+    # Servidor de métricas 
   # metrics:
     # image: grafana/grafana:latest
     # container_name: metrics_dashboard
