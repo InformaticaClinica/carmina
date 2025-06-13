@@ -27,7 +27,12 @@ class LocalProvider(BaseCloudProvider):
         "gemma-3-1b": "gemma3:1b",
         "gemma-3-4b": "gemma3:4b",
         # Qwen models
-        "qwen-3-1.7b": "qwen3:1.7b"
+        "qwen-3-1.7b": "qwen3:1.7b",
+        # Mistral models
+        "mistral": "mistral:latest",
+        
+        # Deepseek models
+        "deepseek-r1-1.5b": "deepseek-r1:1.5b",
     }
     
     def __init__(self, name="local", **kwargs):
@@ -71,7 +76,7 @@ class LocalProvider(BaseCloudProvider):
         
         # Extract inference parameters
         inference_params = kwargs.get('inference_params', {})
-
+        
         payload = {
             "model": ollama_model,
             "messages": messages,

@@ -44,9 +44,12 @@ class AWSProvider(BaseCloudProvider):
         "llama-3.1-70b": "us.meta.llama3-1-70b-instruct-v1:0",
         "llama-3.2-1b": "us.meta.llama3-2-1b-instruct-v1:0",
         "llama-3.2-3b": "us.meta.llama3-2-3b-instruct-v1:0", 
-        # Other models
+        # Mistral models
         "mistral-7b": "mistral.mistral-7b-instruct-v0:2",
         "mistral-large":"mistral.mistral-large-2402-v1:0",
+        
+        # Deepseek models
+        "deepseek-r1":"us.deepseek.r1-v1:0",
     }
     
     def __init__(self, name:str = "aws", **kwargs):
@@ -340,6 +343,13 @@ class AWSProvider(BaseCloudProvider):
                     "max_tokens": inference_params.get("max_tokens", 2048),
                     "temperature": inference_params.get("temperature", 0.6)
                 }   
+            elif "deepseek" in model_id:
+                request_body = {
+                    "messages": messages,
+                    "temperature": inference_params.get("temperature", 0.6),
+                    "top_p": inference_params.get("top_p", 0.9),
+                    "max_tokens": inference_params.get("max_tokens", 2048),
+                }
             logging.debug(f"Request body for {model_id}: {json.dumps(request_body, indent=2)}")
                     
             # Make the actual API call with retry logic
