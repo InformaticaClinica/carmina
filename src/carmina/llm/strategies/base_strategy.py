@@ -51,7 +51,9 @@ class BaseLLMStrategy(ABC):
         Returns:
             Formatted message string
         """
-        system_prompt = load_system_prompt(filename)
+        system_prompt = load_system_prompt(f"system/{filename}")
+        content = load_system_prompt(f"user/{filename}")
+        text = content.replace("<input_text>", text)
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text}

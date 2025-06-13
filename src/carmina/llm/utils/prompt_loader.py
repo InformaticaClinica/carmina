@@ -5,7 +5,7 @@ from typing import Optional
 
 def load_system_prompt(prompt_type: str, anonymization_mode: Optional[str] = None) -> str:
     """
-    Load a system prompt from the appropriate file.
+    Load a system prompt from the appropriate XML file as plain text.
     
     Args:
         prompt_type: The type of prompt (identify, anonymize)
@@ -19,9 +19,9 @@ def load_system_prompt(prompt_type: str, anonymization_mode: Optional[str] = Non
     
     # Build the filename based on parameters
     if prompt_type == "anonymize" and anonymization_mode:
-        filename = f"{prompt_type}_{anonymization_mode}.txt"
+        filename = f"{prompt_type}_{anonymization_mode}.xml"
     else:
-        filename = f"{prompt_type}.txt"
+        filename = f"{prompt_type}.xml"
     
     file_path = os.path.join(prompts_dir, filename)
     
