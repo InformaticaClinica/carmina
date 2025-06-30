@@ -1,0 +1,8 @@
+<user_prompt>
+    <task>
+        Process the following text by substituting the content inside [** **] markers with different, plausible, and contextually coherent values while maintaining the original format and markers
+        Do not substitute dates or identification numbers.
+    </task>
+    <input_text>
+    </input_text>
+</user_prompt>

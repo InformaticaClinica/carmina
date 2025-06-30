@@ -26,6 +26,7 @@ class AzureProvider(BaseCloudProvider):
         super().__init__(name="azure", **kwargs)
         self.endpoint = os.environ.get("AZURE_ENDPOINT") or kwargs.get("endpoint", None)
         self.api_key = os.environ.get("AZURE_SUBSCRIPTION_ID") or kwargs.get("azure_subscription_id", None)
+        self.timeout = int(os.environ.get("AZURE_TIMEOUT"))
         if self.api_key is None:
             raise ValueError("API key is required for Azure provider.")
         if self.endpoint is None:
@@ -33,7 +34,8 @@ class AzureProvider(BaseCloudProvider):
         self._client = ChatCompletionsClient(
             endpoint=self.endpoint,
             credential=AzureKeyCredential(self.api_key),
-            api_version="2024-05-01-preview"
+            api_version="2024-05-01-preview",
+            read_timeout=self.timeout
         )
         logging.info("Azure Provider initialized.")
 
