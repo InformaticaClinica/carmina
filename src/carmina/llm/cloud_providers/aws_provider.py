@@ -31,7 +31,7 @@ class AWSProvider(BaseCloudProvider):
         # Anthropic Claude models
         "claude-3.5-haiku": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
         "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
-        "claude-4-sonnet": "us.anthropic.claude-sonnet-4-20250514-v1:0", #no funciona
+        "claude-4.0-sonnet": "us.anthropic.claude-sonnet-4-20250514-v1:0", #no funciona
         "claude-3.5-sonnet":"us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "claude-3.5-sonnet-v2":"us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "claude-4-opus": "us.anthropic.claude-opus-4-20250514-v1:0", #no funciona
@@ -40,10 +40,11 @@ class AWSProvider(BaseCloudProvider):
 
         
         # LLama models
-        "llama-3.3-70b": "us.meta.llama3-3-70b-instruct-v1:0",
         "llama-3.1-70b": "us.meta.llama3-1-70b-instruct-v1:0",
         "llama-3.2-1b": "us.meta.llama3-2-1b-instruct-v1:0",
         "llama-3.2-3b": "us.meta.llama3-2-3b-instruct-v1:0", 
+        "llama-3.3-70b": "us.meta.llama3-3-70b-instruct-v1:0",
+        
         # Mistral models
         "mistral-7b": "mistral.mistral-7b-instruct-v0:2",
         "mistral-large":"mistral.mistral-large-2402-v1:0",

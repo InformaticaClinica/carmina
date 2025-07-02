@@ -1,11 +1,16 @@
 import os
 import json
+import dotenv
+import logging
 from src.carmina.data_sources.data_loader import load_dataset
 from src.carmina.pipeline.anon_pipeline import AnonymizationPipeline
 from src.carmina.llm.factory import LLMFactory
 from src.carmina.metrics.recorder import MetricsRecorder
 from src.carmina.metrics.timer import measure_time
 from src.carmina.metrics.compare_line import extract_all_metrics
+
+# Load environment variables
+dotenv.load_dotenv()
 
 class ModelExecutor:
     """
@@ -79,6 +84,28 @@ class ModelExecutor:
 
         with measure_time("anon_pipeline_time", recorder):
             anonymized_records = pipeline.run(records)
+        
+        # ======== SAVE ONLY NON-EMPTY ANONYMIZED_TEXT =========
+        output_dir = os.getenv("OUTPUT_DIR")
+        if not output_dir:
+            raise ValueError("OUTPUT_DIR not specified in .env file")
+
+        # Ensure the output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Save only the 'anonymized_text' field for each record if not empty
+        saved_count = 0
+        for record in anonymized_records:
+            anonymized_text = record.get("anonymized_text", "")
+            if anonymized_text.strip():  # Only save if not empty or whitespace
+                record_id = record.get("id", "unknown")
+                output_path = os.path.join(output_dir, f"{record_id}.txt")
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(anonymized_text)
+                saved_count += 1
+
+        print(f"✅ {saved_count} anonymized_text files saved to {output_dir} (non-empty only)")
+        # ======== END SAVE ONLY NON-EMPTY ANONYMIZED_TEXT =========
 
         debug_path = os.path.join(self.debug_dir, f"output_{self.model_name}.json")
         with open(debug_path, "w", encoding="utf-8") as f:
@@ -86,7 +113,9 @@ class ModelExecutor:
 
         print(f"✅ Anonymization completed. Results saved ")
         
-        ground_truth_identity_texts = [entity["identify"] for entity in anonymized_records]
+        ground_truth_identity_texts = [entity.get("identify", None) for entity in anonymized_records]
+        if None in ground_truth_identity_texts:
+            logging.warning("Some records are missing the 'identify' key.")
         prediction_identity_texts = [entity["identified_text"] for entity in anonymized_records]
         ground_truth_texts = [entity["masked_text"] for entity in anonymized_records]
         prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
@@ -107,7 +136,10 @@ class ModelExecutor:
         metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
         recorder.export_to_json(metrics_path)
 
-        print(f"✅ Model {self.model_name} completed. Results in {output_path} and {metrics_path}")
+        print(f"✅ Model {self.model_name} completed. Results in {self.output_dir} and {metrics_path}")
+
+        # Retrieve output directory from .env
+        
 
     def get_language(self, id):
         """
