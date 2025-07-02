@@ -49,12 +49,16 @@ class AnonymizationPipeline:
             raise ValueError(f"Unsupported anonymization mode: {self.anonymization_mode}")
         
         # Configure document processing limit from environment variable
+        self.first_document = self._get_first_document()
         self.max_documents = self._get_max_documents_from_env()
         self.processed_count = 0
         
         logging.info(f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode")
         logging.info(f"Maximum documents to process: {self.max_documents if self.max_documents else 'No limit'}")
     
+    def _get_first_document(self) -> Optional[int]:
+        return int(os.environ.get("FIRST_DOCUMENT_TO_PROCESS"))
+
     def _get_max_documents_from_env(self) -> Optional[int]:
         """
         Get the maximum number of documents to process from environment variables.
@@ -85,9 +89,14 @@ class AnonymizationPipeline:
             List of processed records with anonymized text and metadata
         """
         results = []
-        
+        count = 0
         for record in records:
             # Check if we've reached the processing limit
+            if self.first_document is not None and count < self.first_document:
+                logging.info(f"Skipping record {count + 1} (first document limit not reached)")
+                count += 1
+                continue
+
             if self.max_documents is not None and self.processed_count >= self.max_documents:
                 logging.info(f"Reached maximum document limit ({self.max_documents}), stopping processing")
                 break
