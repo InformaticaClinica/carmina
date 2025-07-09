@@ -94,8 +94,21 @@ class GeminiStrategy(BaseLLMStrategy):
     def count_tokens(self, text):
         pass
 
-    def process_for_anonymization(self, text, mode):
-        pass
+    def process_for_anonymization(self, text: str, strategy: str) -> str:
+        """
+        Process text for anonymization using the specified strategy.
+        
+        Args:
+            text: The input text to anonymize
+            strategy: The anonymization strategy to use (e.g., 'label')
+            
+        Returns:
+            The anonymized text
+        """
+        messages = self.get_message(strategy, text)
+        inference_params = self.get_inference_params()
+        result = self.run_inference(messages, inference_params)
+        return result
 
     def process_for_identification(self, text, mode):
         pass

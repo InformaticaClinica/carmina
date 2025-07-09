@@ -1,0 +1,27 @@
+<user_prompt>
+    <labels>
+        <label>FAMILIARES_SUJETO_ASISTENCIA</label>
+        <label>FECHAS</label>
+        <label>NUMERO_TELEFONO</label>
+        <label>OTROS_SUJETO_ASISTENCIA</label>
+        <label>INSTITUCION</label>
+        <label>NUMERO_IDENTIF</label>
+        <label>EDAD_SUJETO_ASISTENCIA</label>
+        <label>HOSPITAL</label>
+        <label>PAIS</label>
+        <label>TERRITORIO</label>
+        <label>NOMBRE_PERSONAL_SANITARIO</label>
+        <label>PROFESION</label>
+        <label>ID_SUJETO_ASISTENCIA</label>
+        <label>CENTRO_SALUD</label>
+        <label>SEXO_SUJETO_ASISTENCIA</label>
+        <label>CALLE</label>
+        <label>ID_CONTACTO_ASISTENCIAL</label>
+        <label>URL_WEB</label>
+    </labels>
+    <task>
+        Process the following text by substituting the quasi-identifier attributes:
+    </task>
+    <input_text>
+    </input_text>
+</user_prompt>
