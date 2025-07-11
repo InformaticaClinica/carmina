@@ -17,13 +17,24 @@ class TestStrategy(BaseLLMStrategy):
     def get_context_window(self):
         return 4096
     
-    def count_tokens(self, text):
+    def count_tokens(self, text: str) -> int:
         return len(text.split())
+    
+    def batch_identify(self, texts, **kwargs):
+        return [f"[**{text}**]" for text in texts]
 
 
 @pytest.mark.unit
 class TestBaseLLMStrategy:
     """Test base LLM strategy functionality."""
+    
+    @pytest.fixture
+    def mock_cloud_provider(self):
+        """Mock cloud provider for testing."""
+        provider = MagicMock()
+        provider.get_name.return_value = "mock"
+        provider.run_inference.return_value = "test response"
+        return provider
     
     def test_init_with_defaults(self, mock_cloud_provider):
         """Test strategy initialization with default parameters."""
@@ -37,8 +48,9 @@ class TestBaseLLMStrategy:
         assert strategy.anonymization_mode == "identify"
         assert strategy.temperature == 1.0
         assert strategy.max_tokens == 2500
-        assert strategy.top_k == 40
-        assert strategy.top_p == 0.95
+        assert strategy.top_p == 1.0
+        assert strategy.frequency_penalty == 0.0
+        assert strategy.presence_penalty == 0.0
     
     def test_init_with_custom_params(self, mock_cloud_provider):
         """Test strategy initialization with custom parameters."""
@@ -48,15 +60,17 @@ class TestBaseLLMStrategy:
             anonymization_mode="label",
             temperature=0.5,
             max_tokens=1000,
-            top_k=20,
-            top_p=0.8
+            top_p=0.8,
+            frequency_penalty=0.1,
+            presence_penalty=0.2
         )
         
         assert strategy.anonymization_mode == "label"
         assert strategy.temperature == 0.5
         assert strategy.max_tokens == 1000
-        assert strategy.top_k == 20
         assert strategy.top_p == 0.8
+        assert strategy.frequency_penalty == 0.1
+        assert strategy.presence_penalty == 0.2
     
     def test_init_with_environment_variables(self, mock_cloud_provider):
         """Test strategy initialization with environment variables."""

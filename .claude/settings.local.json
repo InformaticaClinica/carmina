@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test:*)",
+      "Bash(ls:*)",
+      "Bash(make:*)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(brew install:*)",
+      "Bash(venv/bin/python -m pytest tests/unit/test_base_strategy.py::TestBaseLLMStrategy::test_init_with_defaults -v)",
+      "Bash(venv/bin/python -m pytest tests/unit/test_metrics.py -v)",
+      "Bash(venv/bin/python -m pytest tests/integration/test_llm_integration.py -v)",
+      "Bash(venv/bin/python -m pytest --tb=no -q)",
+      "Bash(venv/bin/python -m pytest tests/integration/test_llm_integration.py::TestLLMIntegration::test_mock_strategy_count_tokens -v)",
+      "Bash(venv/bin/python -m pytest tests/integration/test_llm_integration.py::TestLLMIntegration::test_mock_strategy_count_prompt_tokens -v)",
+      "Bash(venv/bin/python -m pytest tests/unit/test_metrics_recorder.py -v)"
+    ],
+    "deny": []
+  }
+}

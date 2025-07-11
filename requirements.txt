@@ -20,7 +20,7 @@ azure-storage-file-datalake==12.20.0
 azure-storage-file-share==12.21.0
 babel==2.17.0
 beautifulsoup4==4.13.4
-blis==0.7.11
+blis>=0.7.11,<0.8.0
 boto3==1.38.0
 botocore==1.38.0
 cachetools==5.5.2
@@ -165,7 +165,7 @@ SQLAlchemy==2.0.40
 srsly==2.5.1
 strictyaml==1.7.3
 tenacity==8.5.0
-thinc==8.2.5
+thinc>=8.2.5
 threadpoolctl==3.6.0
 tiktoken==0.9.0
 tqdm==4.67.1

@@ -4,6 +4,7 @@ import os
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.cloud_providers.mock_provider import MockProvider
+from src.carmina.llm.utils.token_counter import get_token_counter
 
 class MockLLMStrategy(BaseLLMStrategy):
     """
@@ -23,6 +24,7 @@ class MockLLMStrategy(BaseLLMStrategy):
     def __init__(self, model_name: str="MockLLMStrategy", cloud_provider: BaseCloudProvider = None, **kwargs):
         cloud_provider = MockProvider()
         super().__init__(model_name=model_name, cloud_provider=cloud_provider, **kwargs)
+        self.token_counter = get_token_counter(self.model_name, "mock")
 
     def get_context_window(self) -> int:
         """
@@ -52,8 +54,41 @@ class MockLLMStrategy(BaseLLMStrategy):
     def batch_identify(self, texts, **kwargs):
         pass
 
-    def count_tokens(self, text):
-        pass
+    def count_tokens(self, text: str) -> int:
+        """
+        Count tokens in the given text using mock token counter.
+        
+        Args:
+            text: Text to count tokens for
+            
+        Returns:
+            Number of tokens in the text
+        """
+        return self.token_counter.count_tokens(text)
+    
+    def count_prompt_tokens(self, anonymization_mode: str, input_text: str) -> dict:
+        """
+        Count tokens for both system and user prompts.
+        
+        Args:
+            anonymization_mode: The anonymization mode (identify, label, substitute)
+            input_text: The input text to be processed
+            
+        Returns:
+            Dictionary with token counts for system, user, and total
+        """
+        try:
+            # Get the messages that would be sent to the model
+            messages = self.get_message(anonymization_mode, input_text)
+            return self.token_counter.count_message_tokens(messages)
+        except Exception as e:
+            logger.warning(f"Error counting prompt tokens: {e}")
+            # Return approximation if message creation fails
+            return {
+                "system": self.count_tokens("System prompt placeholder"),
+                "user": self.count_tokens(input_text),
+                "total": self.count_tokens("System prompt placeholder") + self.count_tokens(input_text)
+            }
 
     def process_for_anonymization(self, text, mode):
         try:

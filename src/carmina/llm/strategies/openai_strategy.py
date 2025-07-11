@@ -6,6 +6,7 @@ from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
 from src.carmina.llm.model_config import MODEL_CONFIGS
+from src.carmina.llm.utils.token_counter import get_token_counter
 
 class OpenAIStrategy(BaseLLMStrategy):
     """
@@ -22,6 +23,7 @@ class OpenAIStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name, cloud_provider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
+        self.token_counter = get_token_counter(self.model_name, "openai")
     
     def run_inference(self, messages, inference_params):
         inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
@@ -40,7 +42,16 @@ class OpenAIStrategy(BaseLLMStrategy):
         pass
 
     def count_tokens(self, text: str) -> int:
-        pass
+        """
+        Count tokens in the given text using OpenAI tokenizer.
+        
+        Args:
+            text: Text to count tokens for
+            
+        Returns:
+            Number of tokens in the text
+        """
+        return self.token_counter.count_tokens(text)
 
     def adapt_message(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
         """

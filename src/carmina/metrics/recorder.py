@@ -88,6 +88,44 @@ class MetricsRecorder:
         """
         return self.current_metrics
     
+    def record_token_metrics(self, token_counts: Dict[str, int], anonymization_mode: str = None) -> 'MetricsRecorder':
+        """
+        Record token usage metrics.
+        
+        Args:
+            token_counts: Dictionary with system, user, and total token counts
+            anonymization_mode: The anonymization mode used (optional)
+            
+        Returns:
+            self: For method chaining
+        """
+        prefix = f"{anonymization_mode}_" if anonymization_mode else ""
+        
+        self.current_metrics[f"{prefix}tokens_system"] = token_counts.get("system", 0)
+        self.current_metrics[f"{prefix}tokens_user"] = token_counts.get("user", 0)
+        self.current_metrics[f"{prefix}tokens_total"] = token_counts.get("total", 0)
+        
+        return self
+    
+    def record_cost_metrics(self, input_cost: float = 0.0, output_cost: float = 0.0, 
+                           total_cost: float = None) -> 'MetricsRecorder':
+        """
+        Record cost metrics based on token usage.
+        
+        Args:
+            input_cost: Cost for input tokens
+            output_cost: Cost for output tokens  
+            total_cost: Total cost (if None, calculated as input_cost + output_cost)
+            
+        Returns:
+            self: For method chaining
+        """
+        self.current_metrics["cost_input"] = input_cost
+        self.current_metrics["cost_output"] = output_cost
+        self.current_metrics["cost_total"] = total_cost if total_cost is not None else input_cost + output_cost
+        
+        return self
+    
     def get_all_results(self) -> List[Dict[str, Any]]:
         """
         Get all recorded metrics.

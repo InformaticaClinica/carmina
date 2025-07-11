@@ -149,6 +149,40 @@ class BaseLLMStrategy(ABC):
         """
         pass
     
+    def count_prompt_tokens(self, anonymization_mode: str, input_text: str) -> Dict[str, int]:
+        """
+        Count tokens for both system and user prompts.
+        
+        Args:
+            anonymization_mode: The anonymization mode (identify, label, substitute)
+            input_text: The input text to be processed
+            
+        Returns:
+            Dictionary with token counts for system, user, and total
+        """
+        try:
+            # Get the messages that would be sent to the model
+            messages = self.get_message(anonymization_mode, input_text)
+            
+            counts = {"system": 0, "user": 0, "total": 0}
+            for message in messages:
+                role = message.get("role", "user")
+                content = message.get("content", "")
+                tokens = self.count_tokens(content)
+                
+                if role in counts:
+                    counts[role] += tokens
+                counts["total"] += tokens
+                
+            return counts
+        except Exception as e:
+            # Fallback to simple estimation
+            return {
+                "system": self.count_tokens("System prompt placeholder"),
+                "user": self.count_tokens(input_text),
+                "total": self.count_tokens("System prompt placeholder") + self.count_tokens(input_text)
+            }
+    
     def get_name(self) -> str:
         """
         Get the name of this model.
