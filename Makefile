@@ -45,10 +45,10 @@ install:
 # Run the main application
 .PHONY: run
 run:
-	@if [ -d "$(VENV)" ]; then \
-		$(VENV_BIN)/python main.py; \
+	if [ -d "$(VENV)" ]; then \
+		set -a; source .env; set +a; $(VENV_BIN)/python main.py; \
 	else \
-		$(PYTHON) main.py; \
+		set -a; source .env; set +a; eval "$$(conda shell.bash hook)" && conda activate python-carmina && python main.py; \
 	fi
 
 # Run all tests
@@ -57,7 +57,7 @@ test:
 	@if [ -d "$(VENV)" ]; then \
 		$(VENV_BIN)/python -m pytest; \
 	else \
-		$(PYTHON) -m pytest; \
+		conda run -n python-carmina --no-capture-output python -m pytest; \
 	fi
 
 # Clean up generated files and cache
