@@ -122,6 +122,7 @@ class ModelExecutor:
         filenames = [entity["id"] for entity in anonymized_records]
         languages = [self.get_language(entity["id"]) for entity in anonymized_records] #TODO: improve software design
 
+        
         recorder.record_all(
             extract_all_metrics(
                 ground_truth_identity_texts=ground_truth_identity_texts,

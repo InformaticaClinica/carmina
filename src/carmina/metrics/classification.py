@@ -117,6 +117,29 @@ def trace_edit_path(matrix: pd.DataFrame, str1_words: List[str], str2_words: Lis
 
     return deleted[::-1], added[::-1], unchanged[::-1]  # Reverse to preserve order
 
+def clean_labels(labels: List[str]) -> List[str]:
+    """
+    Clean a list of labels by removing empty strings, whitespace, and period symbols.
+    
+    Args:
+        labels: List of labels to clean
+        
+    Returns:
+        List[str]: Cleaned list of labels
+    """
+    if not labels:
+        return []
+    
+    cleaned = []
+    for label in labels:
+        if isinstance(label, str):
+            # Strip whitespace and check if it's not empty or just a period
+            cleaned_label = label.strip()
+            if cleaned_label and cleaned_label != "." and cleaned_label != "":
+                cleaned.append(cleaned_label)
+    
+    return cleaned
+
 def calculate_positives_and_negatives(ground_truth_labels: List[str], generated_labels: List[str]) -> Tuple[int, int, int]:
     """
     Calculate true positives, false positives, and false negatives by comparing label lists.
@@ -132,9 +155,13 @@ def calculate_positives_and_negatives(ground_truth_labels: List[str], generated_
     if not isinstance(ground_truth_labels, list) or not isinstance(generated_labels, list):
         raise TypeError("Both inputs must be lists")
 
+    # Clean the labels first to remove empty strings, whitespace, and periods
+    cleaned_gt_labels = clean_labels(ground_truth_labels)
+    cleaned_gen_labels = clean_labels(generated_labels)
+
     # Use set operations to find matching and differing labels
-    ground_truth_set = set(ground_truth_labels)
-    generated_set = set(generated_labels)
+    ground_truth_set = set(cleaned_gt_labels)
+    generated_set = set(cleaned_gen_labels)
     
     true_positives = len(ground_truth_set & generated_set)
     false_positives = len(generated_set - ground_truth_set)

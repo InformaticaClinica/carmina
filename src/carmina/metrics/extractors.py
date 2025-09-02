@@ -22,7 +22,24 @@ def extract_labels_from_masked_text(masked_text: str) -> List[str]:
     Returns:
         List[str]: List of extracted entity labels
     """
-    return re.findall(r'\[\*\*(.*?)\*\*\]', masked_text)
+    if not masked_text or not masked_text.strip():
+        return []
+    
+    raw_labels = re.findall(r'\[\*\*(.*?)\*\*\]', masked_text)
+    
+    # Clean the extracted labels to remove empty strings and periods
+    cleaned_labels = []
+    for label in raw_labels:
+        if isinstance(label, str):
+            cleaned_label = label.strip()
+            # Skip empty labels, labels that are just periods/spaces, or contain only periods and spaces
+            if cleaned_label and cleaned_label != ".":
+                # Check if the label contains meaningful content (not just periods and spaces)
+                meaningful_content = cleaned_label.replace(".", "").replace(" ", "").strip()
+                if meaningful_content:
+                    cleaned_labels.append(cleaned_label)
+    
+    return cleaned_labels
 
 def remove_adverbs_determinants(text: str) -> str:
     """

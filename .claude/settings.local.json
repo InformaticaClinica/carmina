@@ -12,7 +12,10 @@
       "Bash(venv/bin/python -m pytest --tb=no -q)",
       "Bash(venv/bin/python -m pytest tests/integration/test_llm_integration.py::TestLLMIntegration::test_mock_strategy_count_tokens -v)",
       "Bash(venv/bin/python -m pytest tests/integration/test_llm_integration.py::TestLLMIntegration::test_mock_strategy_count_prompt_tokens -v)",
-      "Bash(venv/bin/python -m pytest tests/unit/test_metrics_recorder.py -v)"
+      "Bash(venv/bin/python -m pytest tests/unit/test_metrics_recorder.py -v)",
+      "Bash(python3:*)",
+      "Bash(python -m pytest tests/unit/ -k \"test_metrics\" -v)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
