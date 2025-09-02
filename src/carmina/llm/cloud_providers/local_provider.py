@@ -26,7 +26,7 @@ class LocalProvider(BaseCloudProvider):
         # Gemma models
         "gemma-3-1b": "gemma3:1b",
         "gemma-3-4b": "gemma3:4b",
-        "gemma-3-27b": "gemma3:4b",
+        "gemma-3-27b": "gemma3:27b",
         # Qwen models
         "qwen-3-1.7b": "qwen3:1.7b",
         # Mistral models
