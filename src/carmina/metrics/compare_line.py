@@ -58,7 +58,12 @@ def find_best_line_alignment(lines_a, lines_b, tag_pattern):
         
         if not clean1 or not clean2:
             return 0.0
-            
+        
+        # NUEVA MEJORA: Remover números de lista para mejor alineación
+        # Patrón para detectar números de lista al inicio: "1.", "2.", etc.
+        clean1 = re.sub(r'^\d+\.\s*', '', clean1).strip()
+        clean2 = re.sub(r'^\d+\.\s*', '', clean2).strip()
+        
         # Similitud basada en palabras comunes y caracteres
         words1 = set(clean1.split())
         words2 = set(clean2.split())
@@ -76,6 +81,10 @@ def find_best_line_alignment(lines_a, lines_b, tag_pattern):
         
         # Bonus por longitud similar
         len_ratio = min(len(clean1), len(clean2)) / max(len(clean1), len(clean2))
+        
+        # Bonus adicional si el contenido principal es muy similar (>90% palabras comunes)
+        if word_sim > 0.9:
+            return 0.95  # Alta confianza en el match
         
         return word_sim * (0.8 + 0.2 * len_ratio)
     
@@ -156,6 +165,15 @@ def extract_tags_from_files(content_a, content_b):
     tag_pattern = re.compile(r'\[\*\*(.*?)\*\*\]')
 
     try:
+        # DEBUG: Agregar línea 0 con contenido completo para debug
+        result["line_0"] = {
+            "textA": content_a,
+            "textB": content_b,
+            "labelA": _extract_tags_from_line(content_a, tag_pattern),
+            "labelB": _extract_tags_from_line(content_b, tag_pattern),
+            "metrics": get_all_metrics(_extract_tags_from_line(content_a, tag_pattern), 
+                                     _extract_tags_from_line(content_b, tag_pattern))
+        }
         
         # Dividir contenido en líneas individuales
         lines_a = split_clinical_document(content_a)
