@@ -172,7 +172,11 @@ def extract_tags_from_files(content_a, content_b):
                 "textB": line_b,
                 "labelA": tags_a,
                 "labelB": tags_b,
-                "metrics": metrics
+                "metrics": metrics,
+                "debug_line": {
+                    "raw_textA": line_a.strip(),
+                    "raw_textB": line_b.strip()
+                }
             }
         
         if needs_alignment:
