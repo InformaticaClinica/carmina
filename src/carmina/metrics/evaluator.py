@@ -17,10 +17,13 @@ def calculate_metrics(line_a:str, line_b:str, metrics: Dict[str, Any]) -> Dict[s
         "fp": 0,
         "fn": 0,
     }
-    for line in metrics.values():
-        total["tp"] += line["metrics"]["tp"]
-        total["fp"] += line["metrics"]["fp"]
-        total["fn"] += line["metrics"]["fn"]
+    for line_id, line_data in metrics.items():
+        # Skip line_0 as it's debug only and shouldn't participate in metrics
+        if line_id == "line_0":
+            continue
+        total["tp"] += line_data["metrics"]["tp"]
+        total["fp"] += line_data["metrics"]["fp"]
+        total["fn"] += line_data["metrics"]["fn"]
     total["precision"] = calculate_precision(total["tp"], total["fp"])
     total["recall"] = calculate_recall(total["tp"], total["fn"])
     total["f1"] = calculate_f1(total["precision"], total["recall"])

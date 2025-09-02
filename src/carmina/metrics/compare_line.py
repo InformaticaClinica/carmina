@@ -47,105 +47,85 @@ def _extract_tags_from_line(line, tag_pattern):
 
 def find_best_line_alignment(lines_a, lines_b, tag_pattern):
     """
-    Encuentra el mejor alineamiento entre dos arrays de líneas,
-    detectando líneas faltantes o insertadas usando programación dinámica.
+    Encuentra el mejor alineamiento entre dos arrays de líneas usando programación dinámica.
+    Detecta líneas faltantes o insertadas basándose en similitud semántica del contenido.
     """
-    # Función para calcular similitud entre dos líneas
-    def line_similarity(line1, line2):
-        # Remover tags para comparar contenido base
-        clean1 = re.sub(r'\[\*\*.*?\*\*\]', '', line1).strip().lower()
-        clean2 = re.sub(r'\[\*\*.*?\*\*\]', '', line2).strip().lower()
+    def _normalize_content(line):
+        """Normaliza el contenido de una línea para comparación semántica."""
+        # Remover tags y números de lista, limpiar espacios
+        clean = re.sub(r'\[\*\*.*?\*\*\]', '', line).strip().lower()
+        clean = re.sub(r'^\d+\.\s*', '', clean).strip()
+        return clean
+    
+    def _calculate_similarity(line1, line2):
+        """Calcula similitud semántica entre dos líneas normalizadas."""
+        clean1, clean2 = _normalize_content(line1), _normalize_content(line2)
         
         if not clean1 or not clean2:
             return 0.0
+            
+        words1, words2 = set(clean1.split()), set(clean2.split())
         
-        # NUEVA MEJORA: Remover números de lista para mejor alineación
-        # Patrón para detectar números de lista al inicio: "1.", "2.", etc.
-        clean1 = re.sub(r'^\d+\.\s*', '', clean1).strip()
-        clean2 = re.sub(r'^\d+\.\s*', '', clean2).strip()
-        
-        # Similitud basada en palabras comunes y caracteres
-        words1 = set(clean1.split())
-        words2 = set(clean2.split())
-        
+        # Manejo especial para líneas muy cortas
         if not words1 or not words2:
-            # Usar similitud de caracteres para líneas cortas
-            if len(clean1) < 10 or len(clean2) < 10:
-                return 0.8 if clean1 == clean2 else 0.0
-            return 0.0
+            return 0.8 if clean1 == clean2 else 0.0
         
-        # Similitud de palabras    
+        # Cálculo de similitud basado en intersección/unión de palabras (Jaccard)
         intersection = len(words1 & words2)
         union = len(words1 | words2)
-        word_sim = intersection / union if union > 0 else 0.0
+        jaccard_sim = intersection / union if union > 0 else 0.0
         
-        # Bonus por longitud similar
-        len_ratio = min(len(clean1), len(clean2)) / max(len(clean1), len(clean2))
+        # Factor de ajuste por longitud similar
+        len_factor = min(len(clean1), len(clean2)) / max(len(clean1), len(clean2))
         
-        # Bonus adicional si el contenido principal es muy similar (>90% palabras comunes)
-        if word_sim > 0.9:
-            return 0.95  # Alta confianza en el match
+        # Alta confianza para contenido muy similar
+        if jaccard_sim > 0.9:
+            return 0.95
         
-        return word_sim * (0.8 + 0.2 * len_ratio)
+        return jaccard_sim * (0.8 + 0.2 * len_factor)
     
-    # Matriz de programación dinámica para encontrar la mejor alineación
+    # Configuración de la matriz de programación dinámica
     m, n = len(lines_a), len(lines_b)
-    
-    # dp[i][j] = mejor score para alinear lines_a[0:i] con lines_b[0:j]
     dp = [[0.0] * (n + 1) for _ in range(m + 1)]
-    
-    # Traceback para reconstruir la alineación
     trace = [[None] * (n + 1) for _ in range(m + 1)]
     
-    # Llenar la matriz DP
+    # Construcción de la matriz usando programación dinámica
     for i in range(1, m + 1):
         for j in range(1, n + 1):
-            # Opción 1: Alinear lines_a[i-1] con lines_b[j-1]
-            similarity = line_similarity(lines_a[i-1], lines_b[j-1])
-            if dp[i-1][j-1] + similarity > dp[i][j]:
-                dp[i][j] = dp[i-1][j-1] + similarity
-                trace[i][j] = 'match'
+            similarity = _calculate_similarity(lines_a[i-1], lines_b[j-1])
             
-            # Opción 2: Saltar línea en A (inserción en B)
-            if dp[i-1][j] > dp[i][j]:
-                dp[i][j] = dp[i-1][j]
-                trace[i][j] = 'skip_a'
-                
-            # Opción 3: Saltar línea en B (inserción en A)
-            if dp[i][j-1] > dp[i][j]:
-                dp[i][j] = dp[i][j-1]
-                trace[i][j] = 'skip_b'
+            # Evaluar todas las opciones posibles
+            options = [
+                (dp[i-1][j-1] + similarity, 'match'),  # Alinear ambas líneas
+                (dp[i-1][j], 'skip_a'),                # Saltar línea en A
+                (dp[i][j-1], 'skip_b')                 # Saltar línea en B
+            ]
+            
+            best_score, best_action = max(options, key=lambda x: x[0])
+            dp[i][j] = best_score
+            trace[i][j] = best_action
     
-    # Reconstruir la alineación desde trace
+    # Reconstrucción del alineamiento óptimo
     alignments = []
     i, j = m, n
     
     while i > 0 or j > 0:
-        if i > 0 and j > 0 and trace[i][j] == 'match':
-            # Solo incluir si la similitud es suficientemente alta
-            similarity = line_similarity(lines_a[i-1], lines_b[j-1])
-            if similarity > 0.4:  # Umbral para considerarlo un match válido
+        action = trace[i][j] if i > 0 and j > 0 else None
+        
+        if action == 'match':
+            similarity = _calculate_similarity(lines_a[i-1], lines_b[j-1])
+            if similarity > 0.4:  # Umbral mínimo para match válido
                 alignments.append((i-1, j-1))
             else:
-                # Tratarlo como dos líneas separadas
-                alignments.append((i-1, -1))
-                alignments.append((-1, j-1))
-            i -= 1
-            j -= 1
-        elif i > 0 and trace[i][j] == 'skip_a':
+                # Si la similitud es muy baja, tratar como líneas separadas
+                alignments.extend([(i-1, -1), (-1, j-1)])
+            i, j = i-1, j-1
+        elif action == 'skip_a' or i > 0:
             alignments.append((i-1, -1))
             i -= 1
-        elif j > 0 and trace[i][j] == 'skip_b':
+        else:  # skip_b or j > 0
             alignments.append((-1, j-1))
             j -= 1
-        else:
-            # Caso base
-            if i > 0:
-                alignments.append((i-1, -1))
-                i -= 1
-            if j > 0:
-                alignments.append((-1, j-1))
-                j -= 1
     
     return list(reversed(alignments))
 
@@ -165,15 +145,6 @@ def extract_tags_from_files(content_a, content_b):
     tag_pattern = re.compile(r'\[\*\*(.*?)\*\*\]')
 
     try:
-        # DEBUG: Agregar línea 0 con contenido completo para debug
-        result["line_0"] = {
-            "textA": content_a,
-            "textB": content_b,
-            "labelA": _extract_tags_from_line(content_a, tag_pattern),
-            "labelB": _extract_tags_from_line(content_b, tag_pattern),
-            "metrics": get_all_metrics(_extract_tags_from_line(content_a, tag_pattern), 
-                                     _extract_tags_from_line(content_b, tag_pattern))
-        }
         
         # Dividir contenido en líneas individuales
         lines_a = split_clinical_document(content_a)
@@ -187,8 +158,25 @@ def extract_tags_from_files(content_a, content_b):
         size_diff = abs(len(lines_a_clean) - len(lines_b_clean))
         needs_alignment = size_diff > 0 or len(lines_a_clean) != len(lines_b_clean)
         
+        def _process_line_pair(line_a, line_b, line_id):
+            """Procesa un par de líneas y genera la entrada de resultado."""
+            if not line_a.strip() or not line_b.strip():
+                return None  # Skip empty lines
+                
+            tags_a = _extract_tags_from_line(line_a, tag_pattern)
+            tags_b = _extract_tags_from_line(line_b, tag_pattern)
+            metrics = get_all_metrics(tags_a, tags_b)
+            
+            return {
+                "textA": line_a,
+                "textB": line_b,
+                "labelA": tags_a,
+                "labelB": tags_b,
+                "metrics": metrics
+            }
+        
         if needs_alignment:
-            # Usar alineamiento inteligente
+            # Usar alineamiento inteligente para documentos con diferencias estructurales
             alignments = find_best_line_alignment(lines_a_clean, lines_b_clean, tag_pattern)
             
             line_counter = 1
@@ -196,51 +184,21 @@ def extract_tags_from_files(content_a, content_b):
                 line_a = lines_a_clean[i_a] if i_a >= 0 else ""
                 line_b = lines_b_clean[i_b] if i_b >= 0 else ""
                 
-                # NUEVA LÓGICA: No crear líneas con contenido vacío en textB
-                # Si una línea de A no tiene match en B, simplemente no la incluimos
-                # Esto evita crear desplazamientos y mantiene la coordinación
-                if not line_a.strip() or not line_b.strip():
-                    continue
-                
-                tags_a = _extract_tags_from_line(line_a, tag_pattern)
-                tags_b = _extract_tags_from_line(line_b, tag_pattern)
-                
-                metrics = get_all_metrics(tags_a, tags_b)
-                
-                line_id = f"line_{line_counter}"
-                result[line_id] = {
-                    "textA": line_a,
-                    "textB": line_b,
-                    "labelA": tags_a,
-                    "labelB": tags_b,
-                    "metrics": metrics
-                }
-                line_counter += 1
+                processed = _process_line_pair(line_a, line_b, f"line_{line_counter}")
+                if processed:
+                    result[f"line_{line_counter}"] = processed
+                    line_counter += 1
         else:
-            # Procesamiento normal línea por línea
+            # Procesamiento secuencial para documentos con estructura similar
             max_lines = max(len(lines_a_clean), len(lines_b_clean))
             
             for line_number in range(max_lines):
                 line_a = lines_a_clean[line_number] if line_number < len(lines_a_clean) else ""
                 line_b = lines_b_clean[line_number] if line_number < len(lines_b_clean) else ""
                 
-                # Si después de la limpieza alguna línea está vacía, saltarla
-                if not line_a.strip() or not line_b.strip():
-                    continue
-                
-                tags_a = _extract_tags_from_line(line_a, tag_pattern)
-                tags_b = _extract_tags_from_line(line_b, tag_pattern)
-
-                metrics = get_all_metrics(tags_a, tags_b)
-
-                line_id = f"line_{line_number+1}"
-                result[line_id] = {
-                    "textA": line_a,
-                    "textB": line_b,
-                    "labelA": tags_a,
-                    "labelB": tags_b,
-                    "metrics": metrics
-                }
+                processed = _process_line_pair(line_a, line_b, f"line_{line_number+1}")
+                if processed:
+                    result[f"line_{line_number+1}"] = processed
 
         # Reorganize the result to include average metrics
         average_metrics = calculate_metrics(content_a, content_b, result)
