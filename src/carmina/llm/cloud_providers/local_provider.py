@@ -23,6 +23,7 @@ class LocalProvider(BaseCloudProvider):
         "llama-3.3-8b": "llama3.3:8b",
         "llama-3.3-70b": "llama3.3:70b",
         "llama-4": "llama4",
+        "llama-4-scout": "llama4:scout",
         # Gemma models
         "gemma-3-1b": "gemma3:1b",
         "gemma-3-4b": "gemma3:4b",
