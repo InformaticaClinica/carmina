@@ -2,9 +2,10 @@ import os
 import json
 
 class BenchmarkSummary:
-    def __init__(self, models, metrics_dir):
+    def __init__(self, models, metrics_dir, benchmark_recorder=None):
         self.models = models
         self.metrics_dir = metrics_dir
+        self.benchmark_recorder = benchmark_recorder
 
     def generate(self):
         print("\n📊 Generando resumen de benchmark...")
@@ -23,3 +24,9 @@ class BenchmarkSummary:
             json.dump(summary, f, indent=2)
 
         print(f"✅ Resumen generado en {summary_path}")
+
+        # Print total execution time if available
+        if self.benchmark_recorder:
+            total_time = self.benchmark_recorder.get_current_metrics().get("total_benchmark_time")
+            if total_time:
+                print(f"⏱️ Total execution time: {total_time:.4f}s")

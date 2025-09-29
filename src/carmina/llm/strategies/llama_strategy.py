@@ -16,6 +16,7 @@ class LlamaStrategy(BaseLLMStrategy):
         "llama-3.2-1b": 8192,
         "llama-3.2-3b": 8192,
         "llama-3.3-70b": 131072,
+        "llama-4-scout":131072,
 
     }
 
