@@ -45,6 +45,7 @@
     <rule attribute="Drugs">
       <instruction>Medications, their dosages, and administration schedules are clinical data and must NEVER be anonymized. The input text for this category must always be identical to the output.</instruction>
       <example>Omeprazol 20 mg/24h, fluticasona 50mcg/salmeterol 500mcg/12h -> Omeprazol 20 mg/24h, fluticasona 50mcg/salmeterol 500mcg/12h</example>
+      <example>TPAL 1011 (cesárea, 1 IVE). -> TPAL 1011 (cesárea, 1 IVE).</example>
     </rule>
     <rule attribute="Sensitive information">
       <example>raça blanca -> [**raça blanca**]</example>
