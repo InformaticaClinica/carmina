@@ -23,6 +23,7 @@
     <rule attribute="Dates">
       <example>ha estado viviendo en el Centro desde septiembre de 2008. -> ha estado viviendo en el [**Centro**] desde [**septiembre de 2008**].</example>
       <example> ECOCARDIO 4/12/2011: FEVI 67% -> ECOCARDIO [**4/12/2011**]: FEVI 67%</example>
+      <example>25/12-26/12 -> [**25/12**]-[**26/12**]</example>
     </rule>
     <rule attribute="Phone numbers">
       <example>contactando con el siguiente número de teléfono +50 88 078 68 49. -> contactando con el siguiente número de teléfono [**+50 88 078 68 49**].</example>
