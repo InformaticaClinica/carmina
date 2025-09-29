@@ -10,6 +10,8 @@
       <example>Varón de 41 años. -> [**Varón**] de [**41 años**].</example>
     </rule>
     <rule attribute="Sexes">
+      <example>Hombre de -> [**Hombre**] de </example>
+      <example>Mujer de -> [**Mujer**] de </example>
       <example>Varón de 41 años. -> [**Varón**] de [**41 años**].</example>
     </rule>
     <rule attribute="Professions">
@@ -41,7 +43,7 @@
       <example>participar a través del siguiente enlace: https://www.donarsang.gencat.cat/covid19. -> participar a través del siguiente enlace: [**https://www.donarsang.gencat.cat/covid19**].</example>
     </rule>
     <rule attribute="Drugs">
-      <note>Drugs should NOT be anonymized.</note>
+      <instruction>Medications, their dosages, and administration schedules are clinical data and must NEVER be anonymized. The input text for this category must always be identical to the output.</instruction>
       <example>Omeprazol 20 mg/24h, fluticasona 50mcg/salmeterol 500mcg/12h -> Omeprazol 20 mg/24h, fluticasona 50mcg/salmeterol 500mcg/12h</example>
     </rule>
     <rule attribute="Sensitive information">
