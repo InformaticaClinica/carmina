@@ -80,19 +80,20 @@ class AnonymizationPipeline:
     def run(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Execute the complete anonymization pipeline on a list of records.
-        
+
         Args:
             records: List of data records to process
                 Each record should be a dictionary with at least a 'text' field
-                
+
         Returns:
             List of processed records with anonymized text and metadata
         """
         results = []
+        total_to_process = self.max_documents if self.max_documents else len(records) - (self.first_document - 1 if self.first_document else 0)
         count = 0
         for record in records:
             # Check if we've reached the processing limit
-            if self.first_document is not None and count < self.first_document:
+            if self.first_document is not None and (count + 1) < self.first_document:
                 logging.info(f"Skipping record {count + 1} (first document limit not reached)")
                 count += 1
                 continue
@@ -137,7 +138,9 @@ class AnonymizationPipeline:
                 }
                 results.append(output)
                 self.processed_count += 1
-                
+                filename = record.get('id', 'unknown')
+                print(f"{filename} {(self.first_document or 1) + self.processed_count - 1}/{total_to_process}")
+
             except Exception as e:
                 logging.error(f"Error processing record: {e}")
                 results.append({**record, "error": str(e)})

@@ -84,7 +84,10 @@ class ModelExecutor:
 
         with measure_time("anon_pipeline_time", recorder):
             anonymized_records = pipeline.run(records)
-        
+
+        # Capture execution time for inclusion in results
+        execution_time = recorder.get_current_metrics().get("anon_pipeline_time", 0)
+
         # ======== SAVE ONLY NON-EMPTY ANONYMIZED_TEXT =========
         output_dir = os.getenv("OUTPUT_DIR")
         if not output_dir:
@@ -133,7 +136,10 @@ class ModelExecutor:
                 languages=languages,
             )
         )
-        
+
+        # Add execution time to the results
+        recorder.current_metrics["execution_time"] = execution_time
+
         metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
         recorder.export_to_json(metrics_path)
 
