@@ -37,21 +37,28 @@ class BenchmarkSummary:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     summary[model] = data
-                # Format execution_time to human-readable format
-                if "execution_time" in summary[model]:
-                    summary[model]["execution_time"] = format_execution_time(summary[model]["execution_time"])
 
-                # Print individual model metrics
+                # Print individual model metrics per file
                 print(f"\n🔍 Métricas para {model}:")
-                for key, value in summary[model].items():
-                    print(f"  {key}: {value}")
+                for file_result in summary[model]:
+                    file_name = file_result.get('file', 'unknown')
+                    print(f"  Archivo: {file_name}")
+                    for key, value in file_result.items():
+                        if key == 'file':
+                            continue
+                        if key == 'execution_time':
+                            value = format_execution_time(value)
+                        print(f"    {key}: {value}")
 
-                # Aggregate metrics
-                for key, value in data.items():
-                    if isinstance(value, (int, float)):
-                        if key not in aggregated:
-                            aggregated[key] = []
-                        aggregated[key].append(value)
+                # Aggregate metrics across all files for this model
+                for file_result in data:
+                    for key, value in file_result.items():
+                        if key == 'file':
+                            continue
+                        if isinstance(value, (int, float)):
+                            if key not in aggregated:
+                                aggregated[key] = []
+                            aggregated[key].append(value)
             else:
                 print(f"⚠️ No se encontró archivo de métricas para {model}")
 
