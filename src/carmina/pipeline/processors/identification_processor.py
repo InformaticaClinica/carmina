@@ -45,7 +45,7 @@ class IdentificationProcessor(BaseProcessor):
                 identified_chunks.append(identified_chunk)
 
             # Unir los resultados
-            text_identify = "".join(identified_chunks)
+            text_identify = " ".join(identified_chunks)
 
             entities = self._get_brackets_entities(text_identify)
             logging.info(f"Identified entities: {entities}")
