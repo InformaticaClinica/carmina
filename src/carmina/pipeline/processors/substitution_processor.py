@@ -35,28 +35,18 @@ class SubstitutionProcessor(BaseProcessor):
         entities = kwargs.get("entities", {})
 
         try:
-            # Calculate total tokens and context window
-            total_tokens = self.llm_strategy.count_tokens(text)
-            context_window = self.llm_strategy.get_context_window()
-            buffer = 2000  # Buffer for prompts and response
+            # Always chunk text into 100-token chunks
+            chunk_size = 100
+            chunks = self._chunk_text(text, chunk_size)
+            substituted_chunks = []
 
-            if total_tokens > context_window - buffer:
-                # Chunk text when exceeding context window
-                chunk_size = max(1000, (context_window - buffer) // 2)  # Use larger chunks
-                chunks = self._chunk_text(text, chunk_size)
-                substituted_chunks = []
+            for i, chunk in enumerate(chunks, 1):
+                logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
+                substituted_chunk = self.llm_strategy.process_for_anonymization(chunk, "substitute")
+                substituted_chunks.append(substituted_chunk)
 
-                for i, chunk in enumerate(chunks, 1):
-                    logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
-                    substituted_chunk = self.llm_strategy.process_for_anonymization(chunk, "substitute")
-                    substituted_chunks.append(substituted_chunk)
-
-                # Unir los resultados
-                result = "".join(substituted_chunks)
-            else:
-                # Process entire text without chunking
-                logging.info(f"Processing entire text for file {filename} (no chunking needed)")
-                result = self.llm_strategy.process_for_anonymization(text, "substitute")
+            # Unir los resultados
+            result = "".join(substituted_chunks)
 
             # Extract labels for evaluation
             # labels = self._extract_substitution_labels(result)

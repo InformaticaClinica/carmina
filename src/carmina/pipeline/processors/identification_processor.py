@@ -34,28 +34,18 @@ class IdentificationProcessor(BaseProcessor):
             return {"entities": {}, "error": "Invalid input text"}
 
         try:
-            # Calculate total tokens and context window
-            total_tokens = self.llm_strategy.count_tokens(text)
-            context_window = self.llm_strategy.get_context_window()
-            buffer = 2000  # Buffer for prompts and response
+            # Always chunk text into 100-token chunks
+            chunk_size = 100
+            chunks = self._chunk_text(text, chunk_size)
+            identified_chunks = []
 
-            if total_tokens > context_window - buffer:
-                # Chunk text when exceeding context window
-                chunk_size = max(1000, (context_window - buffer) // 2)  # Use larger chunks
-                chunks = self._chunk_text(text, chunk_size)
-                identified_chunks = []
+            for i, chunk in enumerate(chunks, 1):
+                logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
+                identified_chunk = self.llm_strategy.identify(chunk)
+                identified_chunks.append(identified_chunk)
 
-                for i, chunk in enumerate(chunks, 1):
-                    logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
-                    identified_chunk = self.llm_strategy.identify(chunk)
-                    identified_chunks.append(identified_chunk)
-
-                # Unir los resultados
-                text_identify = "".join(identified_chunks)
-            else:
-                # Process entire text without chunking
-                logging.info(f"Processing entire text for file {filename} (no chunking needed)")
-                text_identify = self.llm_strategy.identify(text)
+            # Unir los resultados
+            text_identify = "".join(identified_chunks)
 
             entities = self._get_brackets_entities(text_identify)
             logging.info(f"Identified entities: {entities}")
