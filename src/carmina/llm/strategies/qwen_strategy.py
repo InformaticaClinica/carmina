@@ -5,6 +5,7 @@ from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
 from src.carmina.llm.model_config import MODEL_CONFIGS
+from src.carmina.llm.utils.token_counter import get_token_counter
 
 
 class QwenStrategy(BaseLLMStrategy):
@@ -34,6 +35,7 @@ class QwenStrategy(BaseLLMStrategy):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
+        self.token_counter = get_token_counter(self.model_name, "qwen")
     
     def identify(self, text: str, **kwargs) -> str:
         #TODO: Adapter design pattern for Qwen
@@ -73,7 +75,16 @@ class QwenStrategy(BaseLLMStrategy):
         return self._context_windows.get(self.model_name, 4096)
 
     def count_tokens(self, text: str) -> int:
-        pass
+        """
+        Count tokens in the given text using Qwen tokenizer.
+
+        Args:
+            text: Text to count tokens for
+
+        Returns:
+            Number of tokens in the text
+        """
+        return self.token_counter.count_tokens(text)
 
     def process_for_anonymization(self, text: str, strategy: str) -> Dict[str, Any]:
         pass
