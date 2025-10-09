@@ -11,7 +11,18 @@ class QwenStrategy(BaseLLMStrategy):
     """
     Implementation for Qwen models.
     """
-    
+
+    # Dictionary to map model names to their context windows
+    _context_windows = {
+        "qwen2.5-72b-instruct": 131072,
+        "qwen2.5-32b-instruct": 131072,
+        "qwen2.5-14b-instruct": 131072,
+        "qwen2.5-7b-instruct": 131072,
+        "qwen2.5-3b-instruct": 32768,
+        "qwen2.5-1.5b-instruct": 32768,
+        "qwen2.5-0.5b-instruct": 32768,
+    }
+
     def __init__(self, model_name, cloud_provider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
         self.anonymization_mode = os.environ.get("ANONYMIZATION_MODE") or kwargs.get("anonymization_mode", "label")
@@ -49,7 +60,17 @@ class QwenStrategy(BaseLLMStrategy):
         pass
 
     def get_context_window(self) -> int:
-        pass
+        """
+        Get the maximum context window size for this model.
+
+        Returns:
+            Maximum number of tokens the model can process
+        """
+        # First check model_config.py
+        model_name_lower = self.model_name.lower()
+        if model_name_lower in MODEL_CONFIGS:
+            return MODEL_CONFIGS[model_name_lower]["context_window"]
+        return self._context_windows.get(self.model_name, 4096)
 
     def count_tokens(self, text: str) -> int:
         pass

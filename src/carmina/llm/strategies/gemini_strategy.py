@@ -81,7 +81,7 @@ class GeminiStrategy(BaseLLMStrategy):
     def get_context_window(self) -> int:
         """
         Get the maximum context window size for this model.
-        
+
         Returns:
             Maximum number of tokens the model can process
         """
@@ -89,7 +89,7 @@ class GeminiStrategy(BaseLLMStrategy):
         model_name_lower = self.model_name.lower()
         if model_name_lower in MODEL_CONFIGS:
             return MODEL_CONFIGS[model_name_lower]["context_window"]
-        return None
+        return self._context_windows.get(self.model_name, 4096)
     
     def count_tokens(self, text):
         pass
