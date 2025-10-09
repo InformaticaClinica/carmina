@@ -4,6 +4,7 @@ from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
 from src.carmina.llm.model_config import MODEL_CONFIGS
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
+from src.carmina.llm.utils.token_counter import get_token_counter
 
 class GeminiStrategy(BaseLLMStrategy):
     """
@@ -18,6 +19,7 @@ class GeminiStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name, cloud_provider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
+        self.token_counter = get_token_counter(self.model_name, self.provider_name)
 
     def run_inference(self, messages, inference_params):
         """
@@ -91,8 +93,17 @@ class GeminiStrategy(BaseLLMStrategy):
             return MODEL_CONFIGS[model_name_lower]["context_window"]
         return self._context_windows.get(self.model_name, 4096)
     
-    def count_tokens(self, text):
-        pass
+    def count_tokens(self, text: str) -> int:
+        """
+        Count tokens in the given text using Gemini tokenizer approximation.
+
+        Args:
+            text: Text to count tokens for
+
+        Returns:
+            Number of tokens in the text
+        """
+        return self.token_counter.count_tokens(text)
 
     def process_for_anonymization(self, text: str, strategy: str) -> str:
         """
