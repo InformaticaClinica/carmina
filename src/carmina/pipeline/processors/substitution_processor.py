@@ -39,7 +39,7 @@ class SubstitutionProcessor(BaseProcessor):
             total_tokens = self.llm_strategy.count_tokens(text)
             context_window = self.llm_strategy.get_context_window()
 
-            if total_tokens > context_window - 500:  # Buffer de seguridad
+            if total_tokens > context_window - 1000:  # Buffer de seguridad
                 # Implementar chunking en chunks de 100 tokens
                 chunks = self._chunk_text(text, 100)
                 substituted_chunks = []
