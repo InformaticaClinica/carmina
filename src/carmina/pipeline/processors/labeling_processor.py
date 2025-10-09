@@ -32,24 +32,17 @@ class LabelingProcessor(BaseProcessor):
             return {"anonymized_text": "", "error": "Invalid input text"}
 
         try:
-            # Verificar si necesita chunking
-            total_tokens = self.llm_strategy.count_tokens(text)
-            context_window = self.llm_strategy.get_context_window()
+            # Always chunk text into 100-token chunks
+            chunks = self._chunk_text(text, 100)
+            labeled_chunks = []
 
-            if total_tokens > context_window - 1000:  # Buffer de seguridad
-                # Implementar chunking en chunks de 100 tokens
-                chunks = self._chunk_text(text, 100)
-                labeled_chunks = []
+            for i, chunk in enumerate(chunks, 1):
+                logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
+                labeled_chunk = self.llm_strategy.process_for_anonymization(chunk, "label")
+                labeled_chunks.append(labeled_chunk)
 
-                for i, chunk in enumerate(chunks, 1):
-                    logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
-                    labeled_chunk = self.llm_strategy.process_for_anonymization(chunk, "label")
-                    labeled_chunks.append(labeled_chunk)
-
-                # Unir los resultados
-                result = "".join(labeled_chunks)
-            else:
-                result = self.llm_strategy.process_for_anonymization(text, "label")
+            # Unir los resultados
+            result = "".join(labeled_chunks)
 
             # Extract labels for evaluation
             labels = self._get_brackets_entities(result)
