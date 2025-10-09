@@ -21,11 +21,13 @@ class SubstitutionProcessor(BaseProcessor):
 
         Args:
             text: The input text to anonymize
-            **kwargs: Additional parameters including pre-identified entities
+            **kwargs: Additional parameters including pre-identified entities and 'filename' for logging
 
         Returns:
             Dictionary containing the anonymized text and metadata
         """
+        filename = kwargs.get("filename", "unknown")
+
         if not self._validate_input(text):
             return {"anonymized_text": "", "error": "Invalid input text"}
 
@@ -42,7 +44,8 @@ class SubstitutionProcessor(BaseProcessor):
                 chunks = self._chunk_text(text, 100)
                 substituted_chunks = []
 
-                for chunk in chunks:
+                for i, chunk in enumerate(chunks, 1):
+                    logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
                     substituted_chunk = self.llm_strategy.process_for_anonymization(chunk, "substitute")
                     substituted_chunks.append(substituted_chunk)
 

@@ -21,11 +21,13 @@ class LabelingProcessor(BaseProcessor):
 
         Args:
             text: The input text to anonymize
-            **kwargs: Additional parameters including pre-identified entities
+            **kwargs: Additional parameters including pre-identified entities and 'filename' for logging
 
         Returns:
             Dictionary containing the labeled text and metadata
         """
+        filename = kwargs.get("filename", "unknown")
+
         if not self._validate_input(text):
             return {"anonymized_text": "", "error": "Invalid input text"}
 
@@ -39,7 +41,8 @@ class LabelingProcessor(BaseProcessor):
                 chunks = self._chunk_text(text, 100)
                 labeled_chunks = []
 
-                for chunk in chunks:
+                for i, chunk in enumerate(chunks, 1):
+                    logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
                     labeled_chunk = self.llm_strategy.process_for_anonymization(chunk, "label")
                     labeled_chunks.append(labeled_chunk)
 

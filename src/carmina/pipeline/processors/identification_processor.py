@@ -23,11 +23,13 @@ class IdentificationProcessor(BaseProcessor):
 
         Args:
             text: The input text to process
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters including 'filename' for logging
 
         Returns:
             Dictionary containing identified entities
         """
+        filename = kwargs.get("filename", "unknown")
+
         if not self._validate_input(text):
             return {"entities": {}, "error": "Invalid input text"}
 
@@ -41,7 +43,8 @@ class IdentificationProcessor(BaseProcessor):
                 chunks = self._chunk_text(text, 100)
                 identified_chunks = []
 
-                for chunk in chunks:
+                for i, chunk in enumerate(chunks, 1):
+                    logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
                     identified_chunk = self.llm_strategy.identify(chunk)
                     identified_chunks.append(identified_chunk)
 

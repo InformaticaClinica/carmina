@@ -111,10 +111,11 @@ class AnonymizationPipeline:
                     continue
                 
                 # Step 2: Run identification to find sensitive entities
-                identified_result = self.identify(text)
+                filename = record.get('id', 'unknown')
+                identified_result = self.identify(text, filename=filename)
 
                 # Step 3: Run anonymization (labeling or substitution)
-                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result)
+                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result, filename=filename)
 
                 results_aux = {"identified_text": "", "entities_identified": {}, "anonymized_text": "", "entities_anonymized": {}}
                 if identified_result:
@@ -148,33 +149,36 @@ class AnonymizationPipeline:
         logging.info(f"Completed processing {self.processed_count} documents")
         return results
 
-    def identify(self, text: str) -> Dict[str, Any]:
+    def identify(self, text: str, filename: str = "unknown") -> Dict[str, Any]:
         """
         Identify sensitive entities in the input text.
-        
+
         Args:
             text: The input text to identify entities in
-            
+            filename: The filename for logging purposes
+
         Returns:
             Dictionary with identified entities and their labels
         """
         if self.identification is not None:
-            identified_result = self.identification.process(text)
+            identified_result = self.identification.process(text, filename=filename)
             return identified_result
         else:
             return {}
 
-    def anonymize(self, text: str, identified_result:Dict[List, Any]) -> Dict[str, Any]:
+    def anonymize(self, text: str, identified_result: Dict[str, Any], filename: str = "unknown") -> Dict[str, Any]:
         """
         Anonymize the input text using the configured LLM strategy.
-        
+
         Args:
             text: The input text to anonymize
-            
+            identified_result: The result from identification
+            filename: The filename for logging purposes
+
         Returns:
             Anonymized text
         """
         if self.anonymizer is not None:
-            return self.anonymizer.process(text)
+            return self.anonymizer.process(text, filename=filename)
         else:
             return identified_result

@@ -29,11 +29,11 @@ class BaseProcessor(ABC):
     def process(self, text: str, **kwargs) -> Dict[str, Any]:
         """
         Process the input text according to this processor's function.
-        
+
         Args:
             text: The input text to process
-            **kwargs: Additional processor-specific parameters
-            
+            **kwargs: Additional processor-specific parameters including 'filename' for logging
+
         Returns:
             Dictionary containing the processing results
         """
