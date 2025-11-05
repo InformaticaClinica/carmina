@@ -173,7 +173,7 @@ class AnonymizationPipeline:
             Dictionary with identified entities and their labels
         """
         if self.identification is not None:
-            identified_result = self.identification.process(text, filename=filename)
+            identified_result = self.identification.process(text)
             return identified_result
         else:
             return {}
