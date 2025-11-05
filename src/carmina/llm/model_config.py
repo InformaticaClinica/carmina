@@ -12,7 +12,7 @@ MODEL_CONFIGS = {
         "strategy": "openai",
         "capabilities": ["identification", "anonymization"]
     },
-    
+
     # Anthropic models
     "claude-3-sonnet": {
         "context_window": 180000,
@@ -22,7 +22,7 @@ MODEL_CONFIGS = {
     "claude-3-haiku": {
         "context_window": 150000,
         "strategy": "anthropic",
-        "capabilities": ["identification", "anonymization"]  
+        "capabilities": ["identification", "anonymization"]
     },
     "claude-3.5-sonnet": {
         "context_window": 200000,
@@ -34,7 +34,14 @@ MODEL_CONFIGS = {
         "strategy": "anthropic",
         "capabilities": ["identification", "anonymization"]
     },
-    
+
+    # Ollama models
+    "gemma3:1b": {
+        "context_window": 8192,
+        "strategy": "gemini",
+        "capabilities": ["identification", "anonymization"]
+    },
+
     # HuggingFace models
     "llama-3-8b": {
         "context_window": 8192,

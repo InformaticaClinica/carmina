@@ -1,11 +1,12 @@
 import os
-import logging 
+import logging
 logger = logging.getLogger(__name__)
 
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.model_config import MODEL_CONFIGS
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
+from src.carmina.llm.utils.token_counter import get_token_counter
 
 class DeepSeekStrategy(BaseLLMStrategy):
     """Implementation for DeepSeek models."""
@@ -19,6 +20,7 @@ class DeepSeekStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name: str, cloud_provider: BaseCloudProvider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
+        self.token_counter = get_token_counter(self.model_name, "deepseek")
     
     def run_inference(self, messages, inference_params) -> str:
         inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
@@ -70,7 +72,7 @@ class DeepSeekStrategy(BaseLLMStrategy):
     def get_context_window(self) -> int:
         """
         Get the maximum context window size for this model.
-        
+
         Returns:
             Maximum number of tokens the model can process
         """
@@ -78,10 +80,19 @@ class DeepSeekStrategy(BaseLLMStrategy):
         model_name_lower = self.model_name.lower()
         if model_name_lower in MODEL_CONFIGS:
             return MODEL_CONFIGS[model_name_lower]["context_window"]
-        return None
+        return self._context_windows.get(self.model_name, 4096)
     
-    def count_tokens(self, text):
-        pass
+    def count_tokens(self, text: str) -> int:
+        """
+        Count tokens in the given text using DeepSeek tokenizer.
+
+        Args:
+            text: Text to count tokens for
+
+        Returns:
+            Number of tokens in the text
+        """
+        return self.token_counter.count_tokens(text)
 
     def process_for_identification(self, text, mode):
         pass
