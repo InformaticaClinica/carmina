@@ -117,23 +117,9 @@ class AnonymizationPipeline:
                     results.append({**record, "error": "Empty text"})
                     continue
                 
-<<<<<<< HEAD
                 # Step 2: Anonimized 
                 chunk_text = self.get_text_chunks(text)
                 processed_chunks = self.run_chunk_identify(chunk_text)
-=======
-                # Step 2: Run identification to find sensitive entities
-                filename = record.get('id', 'unknown')
-                identified_result = self.identify(text, filename=filename)
-
-                # Step 3: Run anonymization (labeling or substitution)
-                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result, filename=filename)
-
-                results_aux = {"identified_text": "", "entities_identified": {}, "anonymized_text": "", "entities_anonymized": {}}
-                if identified_result:
-                    results_aux["identified_text"] = identified_result.get("anonymized_text", "")
-                    results_aux["entities_identified"] = identified_result.get("entities", {})
->>>>>>> be27af6e0f4bf603bb0c0358b929126a2dfd8cd4
                 
                 # Step 3: Store
                 filename =  record.get('id', 'unknown')
@@ -151,7 +137,6 @@ class AnonymizationPipeline:
         logging.info(f"Completed processing {self.processed_count} documents")
         return results
 
-<<<<<<< HEAD
     def run_chunk_identify(self, chunks):
         """
         Proceess chunks identify and anonymized
@@ -177,9 +162,6 @@ class AnonymizationPipeline:
         return processed_chunks
 
     def identify(self, text: str) -> Dict[str, Any]:
-=======
-    def identify(self, text: str, filename: str = "unknown") -> Dict[str, Any]:
->>>>>>> be27af6e0f4bf603bb0c0358b929126a2dfd8cd4
         """
         Identify sensitive entities in the input text.
 
