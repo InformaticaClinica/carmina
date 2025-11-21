@@ -35,6 +35,9 @@ class LocalProvider(BaseCloudProvider):
         
         # Deepseek models
         "deepseek-r1-1.5b": "deepseek-r1:1.5b",
+        
+        # GPT-OSS models
+        "gpt-oss-120b": "gpt-oss:120b",
     }
     
     def __init__(self, name="local", **kwargs):
