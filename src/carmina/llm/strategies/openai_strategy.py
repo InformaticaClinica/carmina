@@ -28,7 +28,7 @@ class OpenAIStrategy(BaseLLMStrategy):
     def run_inference(self, messages, inference_params):
         inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
         messages = self.adapt_message(messages)
-        if self.provider_name == "openai":
+        if self.provider_name == "openai" or self.provider_name == "local":
             return self.cloud_provider.run_inference(
                 model_id=self.model_name,
                 messages=messages,
