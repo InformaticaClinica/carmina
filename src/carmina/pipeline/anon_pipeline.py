@@ -21,7 +21,8 @@ from src.carmina.pipeline.processors.identification_processor import Identificat
 from src.carmina.pipeline.processors.labeling_processor import LabelingProcessor
 from src.carmina.pipeline.processors.substitution_processor import SubstitutionProcessor
 
-MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE"))
+MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE", "100"))
+
 
 class AnonymizationPipeline:
     """
@@ -124,6 +125,7 @@ class AnonymizationPipeline:
                 # Step 3: Store
                 filename =  record.get('id', 'unknown')
                 output = {
+                    **record,  # Preserve original record data (ground truth)
                     "namefile": filename,
                     "chunks": processed_chunks
                 }
