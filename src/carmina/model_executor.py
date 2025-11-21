@@ -97,17 +97,17 @@ class ModelExecutor:
         os.makedirs(output_dir, exist_ok=True)
 
         # Save only the 'anonymized_text' field for each record if not empty
-        saved_count = 0
-        for record in anonymized_records:
-            anonymized_text = record.get("anonymized_text", "")
-            if anonymized_text.strip():  # Only save if not empty or whitespace
-                record_id = record.get("id", "unknown")
-                output_path = os.path.join(output_dir, f"{record_id}.txt")
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(anonymized_text)
-                saved_count += 1
-
-        print(f"✅ {saved_count} anonymized_text files saved to {output_dir} (non-empty only)")
+        #saved_count = 0
+        #for record in anonymized_records:
+        #    anonymized_text = record.get("anonymized_text", "")
+        #    if anonymized_text.strip():  # Only save if not empty or whitespace
+        #        record_id = record.get("id", "unknown")
+        #        output_path = os.path.join(output_dir, f"{record_id}.txt")
+        #        with open(output_path, "w", encoding="utf-8") as f:
+        #            f.write(anonymized_text)
+        #        saved_count += 1
+#
+        #print(f"✅ {saved_count} anonymized_text files saved to {output_dir} (non-empty only)")
         # ======== END SAVE ONLY NON-EMPTY ANONYMIZED_TEXT =========
 
         debug_path = os.path.join(self.debug_dir, f"output_{self.model_name}.json")

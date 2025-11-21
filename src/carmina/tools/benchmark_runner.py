@@ -20,14 +20,14 @@ class BenchmarkRunner:
     """
     def __init__(self):
         load_dotenv()
-        self.models = os.getenv("MODELS", "chatgpt").split(",")
-        self.anonymization_mode = os.getenv("ANONYMIZATION_MODE", "label")
-        self.cloud_provider = os.getenv("CLOUD_PROVIDER", "local")
-        self.input_path = os.getenv("INPUT_DIR", "data/input.json")
-        self.output_dir = os.getenv("OUTPUT_DIR", "data/outputs/")
-        self.metrics_dir = os.getenv("METRICS_DIR", "metrics/")
-        self.debug = os.getenv("DEBUG", "false").lower()
-        self.debug_dir = os.getenv("DEBUG_DIR", "data/outputs/debug/")
+        self.models = os.getenv("MODELS").split(",")
+        self.anonymization_mode = os.getenv("ANONYMIZATION_MODE")
+        self.cloud_provider = os.getenv("CLOUD_PROVIDER")
+        self.input_path = os.getenv("INPUT_DIR")
+        self.output_dir = os.getenv("OUTPUT_DIR")
+        self.metrics_dir = os.getenv("METRICS_DIR")
+        self.debug = os.getenv("DEBUG")
+        self.debug_dir = os.getenv("DEBUG_DIR")
 
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.metrics_dir, exist_ok=True)

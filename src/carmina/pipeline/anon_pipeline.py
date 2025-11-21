@@ -8,6 +8,11 @@ anonymization process from raw text to fully anonymized output.
 import logging
 logger = logging.getLogger(__name__)
 
+import nltk
+nltk.download('punkt_tab')
+from nltk.tokenize import sent_tokenize
+
+
 import os
 from typing import Dict, List, Any, Optional
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
@@ -15,6 +20,8 @@ from src.carmina.pipeline.processors.base_processor import BaseProcessor
 from src.carmina.pipeline.processors.identification_processor import IdentificationProcessor
 from src.carmina.pipeline.processors.labeling_processor import LabelingProcessor
 from src.carmina.pipeline.processors.substitution_processor import SubstitutionProcessor
+
+MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE"))
 
 class AnonymizationPipeline:
     """
@@ -110,37 +117,19 @@ class AnonymizationPipeline:
                     results.append({**record, "error": "Empty text"})
                     continue
                 
-                # Step 2: Run identification to find sensitive entities
-                identified_result = self.identify(text)
-
-                # Step 3: Run anonymization (labeling or substitution)
-                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result)
-
-                results_aux = {"identified_text": "", "entities_identified": {}, "anonymized_text": "", "entities_anonymized": {}}
-                if identified_result:
-                    results_aux["identified_text"] = identified_result.get("anonymized_text", "")
-                    results_aux["entities_identified"] = identified_result.get("entities", {})
+                # Step 2: Anonimized 
+                chunk_text = self.get_text_chunks(text)
+                processed_chunks = self.run_chunk_identify(chunk_text)
                 
-                if anonymized_result:
-                    results_aux["anonymized_text"] = anonymized_result.get("anonymized_text", "")
-                    results_aux["entities_anonymized"] = anonymized_result.get("entities", [])
-
-
-                # Step 4: Combine all results into the output
+                # Step 3: Store
+                filename =  record.get('id', 'unknown')
                 output = {
-                    **record,
-                    "gt_raw_entities": self.identification._get_brackets_entities(record.get('identify', '')),
-                    "gt_masked_entities": self.identification._get_brackets_entities(record.get('masked_text', '')),
-                    "identified_text": results_aux["identified_text"],
-                    "entities_identified": results_aux["entities_identified"],
-                    "anonymized_text": results_aux["anonymized_text"],
-                    "entities_anonymized": results_aux["entities_anonymized"],
+                    "namefile": filename,
+                    "chunks": processed_chunks
                 }
                 results.append(output)
                 self.processed_count += 1
-                filename = record.get('id', 'unknown')
-                print(f"{filename} {(self.first_document or 1) + self.processed_count - 1}/{total_to_process}")
-
+                logging.info(f"{filename} {self.processed_count} / {total_to_process}")
             except Exception as e:
                 logging.error(f"Error processing record: {e}")
                 results.append({**record, "error": str(e)})
@@ -148,13 +137,38 @@ class AnonymizationPipeline:
         logging.info(f"Completed processing {self.processed_count} documents")
         return results
 
+    def run_chunk_identify(self, chunks):
+        """
+        Proceess chunks identify and anonymized
+        
+        Args:
+            text: The input is a list of chunks
+        
+        Returns:
+            processed_chunks: The output is a list of dictionaries of each chunk
+        """
+        processed_chunks = []
+        for chunk in chunks:
+            identified = self.identify(chunk)
+            anonymized = self.anonymize(text=identified.get("anonymized_text"), identified_result = identified)
+            processed_chunk = {
+                "original_text" : chunk,
+                "identified_text" : identified.get("anonymized_text"),
+                "entities_identified" : identified.get("entities"),
+                "anonymized_text" : anonymized.get("anonymized_text"),
+                "entities_anonymized" : anonymized.get("entities")
+            }
+            processed_chunks.append(processed_chunk)
+        return processed_chunks
+
     def identify(self, text: str) -> Dict[str, Any]:
         """
         Identify sensitive entities in the input text.
-        
+
         Args:
             text: The input text to identify entities in
-            
+            filename: The filename for logging purposes
+
         Returns:
             Dictionary with identified entities and their labels
         """
@@ -164,17 +178,46 @@ class AnonymizationPipeline:
         else:
             return {}
 
-    def anonymize(self, text: str, identified_result:Dict[List, Any]) -> Dict[str, Any]:
+    def anonymize(self, text: str, identified_result: Dict[str, Any], filename: str = "unknown") -> Dict[str, Any]:
         """
         Anonymize the input text using the configured LLM strategy.
-        
+
         Args:
             text: The input text to anonymize
-            
+            identified_result: The result from identification
+            filename: The filename for logging purposes
+
         Returns:
             Anonymized text
         """
         if self.anonymizer is not None:
-            return self.anonymizer.process(text)
+            return self.anonymizer.process(text, filename=filename)
         else:
             return identified_result
+    
+    #TODO: Refactor file
+    @staticmethod
+    def get_text_chunks(text: str) -> List[str]:
+        """Splits text into chunks of a maximum size, respecting sentence boundaries."""
+        sentences = sent_tokenize(text, language='spanish')
+        
+        text_chunks = []
+        current_chunk_words = []
+        current_word_count = 0
+
+        for sentence in sentences:
+            sentence_words = sentence.split()
+            sentence_word_count = len(sentence_words)
+
+            if current_word_count + sentence_word_count > MAX_CHUNK_SIZE and current_chunk_words:
+                text_chunks.append(" ".join(current_chunk_words))
+                current_chunk_words = sentence_words
+                current_word_count = sentence_word_count
+            else:
+                current_chunk_words.extend(sentence_words)
+                current_word_count += sentence_word_count
+        
+        if current_chunk_words:
+            text_chunks.append(" ".join(current_chunk_words))
+
+        return text_chunks

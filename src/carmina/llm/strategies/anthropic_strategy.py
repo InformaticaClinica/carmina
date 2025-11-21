@@ -30,7 +30,7 @@ class AnthropicStrategy(BaseLLMStrategy):
     def get_context_window(self) -> int:
         """
         Get the maximum context window size for this model.
-        
+
         Returns:
             Maximum number of tokens the model can process
         """
@@ -38,7 +38,7 @@ class AnthropicStrategy(BaseLLMStrategy):
         model_name_lower = self.model_name.lower()
         if model_name_lower in MODEL_CONFIGS:
             return MODEL_CONFIGS[model_name_lower]["context_window"]
-        return None # Default if model not found
+        return self._context_windows.get(self.model_name, 4096) # Default if model not found
     
     def run_inference(self, messages, inference_params) -> str:
         """
