@@ -2,7 +2,7 @@
 Factory module for creating LLM instances with multi-cloud support.
 
 This module implements the Factory pattern to abstract the creation of
-different LLM strategies allowing for seamless switching between 
+different LLM strategies allowing for seamless switching between
 different models and deployment environments.
 """
 
@@ -16,9 +16,11 @@ from src.carmina.llm.strategies.gemini_strategy import GeminiStrategy
 from src.carmina.llm.strategies.openai_strategy import OpenAIStrategy
 from src.carmina.llm.strategies.llama_strategy import LlamaStrategy
 from src.carmina.llm.strategies.qwen_strategy import QwenStrategy
-#from llm.strategies.huggingface_strategy import HuggingFaceStrategy
+
+# from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 from src.carmina.llm.strategies.mock_strategy import MockLLMStrategy
 from src.carmina.llm.strategies.mistral_strategy import MistralStrategy
+
 
 class LLMFactory:
     """Factory for creating LLM strategy instances with cloud provider integration."""
@@ -33,16 +35,15 @@ class LLMFactory:
         "llama": LlamaStrategy,
         "qwen": QwenStrategy,
         "gemma": GeminiStrategy,
-        # "mistral": HuggingFaceStrategy,
         "mock": MockLLMStrategy,
-        "mistral":MistralStrategy
+        "mistral": MistralStrategy,
     }
 
     @classmethod
     def create(
-        cls, 
-        model_name: str, 
-        cloud_provider: str, 
+        cls,
+        model_name: str,
+        cloud_provider: str,
         strategy_kwargs: Optional[Dict[str, Any]] = None,
         provider_kwargs: Optional[Dict[str, Any]] = None,
     ) -> BaseLLMStrategy:
@@ -63,18 +64,16 @@ class LLMFactory:
         """
         strategy_kwargs = strategy_kwargs or {}
         provider_kwargs = provider_kwargs or {}
-        
+
         # Initialize the cloud provider
         provider = CloudProviderFactory.create(cloud_provider, **provider_kwargs)
-        
+
         # Find the appropriate strategy for the model name
         strategy_class = cls._get_strategy_for_model(model_name)
-        
+
         # Create and return the configured strategy
         return strategy_class(
-            model_name=model_name,
-            cloud_provider=provider,
-            **strategy_kwargs
+            model_name=model_name, cloud_provider=provider, **strategy_kwargs
         )
 
     @classmethod
@@ -92,18 +91,20 @@ class LLMFactory:
             ValueError: If no suitable strategy is found.
         """
         model_name = model_name.lower()
-        
+
         for pattern, strategy_class in cls._strategies.items():
             if pattern in model_name:
                 return strategy_class
-                
+
         raise ValueError(
             f"No suitable strategy found for model: {model_name}. "
             f"Supported model patterns are: {', '.join(cls._strategies.keys())}"
         )
 
     @classmethod
-    def register_strategy(cls, pattern: str, strategy_class: Type[BaseLLMStrategy]) -> None:
+    def register_strategy(
+        cls, pattern: str, strategy_class: Type[BaseLLMStrategy]
+    ) -> None:
         """
         Register a new strategy class for a specific model name pattern.
 
@@ -112,3 +113,4 @@ class LLMFactory:
             strategy_class: The strategy class to use for matching models.
         """
         cls._strategies[pattern.lower()] = strategy_class
+
