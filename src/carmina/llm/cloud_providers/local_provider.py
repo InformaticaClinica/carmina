@@ -56,7 +56,7 @@ class LocalProvider(BaseCloudProvider):
             if response.status_code == 200:
                 version = response.json().get("version", "unknown")
                 logging.info(f"Connected to Ollama version {version}")
-                return f"Connected to Ollama version"
+                return "Connected to Ollama version"
             else:
                 logging.warning(f"Could not connect to Ollama: {response.status_code}")
         except Exception as e:
@@ -117,9 +117,3 @@ class LocalProvider(BaseCloudProvider):
         Returns the Ollama model name for the given model ID.
         """
         return self._local_model_ids.get(model_name, model_name)
-
-    def get_name(self) -> str:
-        """
-        Returns the name of the cloud provider.
-        """
-        return "local"
