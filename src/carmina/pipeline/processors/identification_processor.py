@@ -4,19 +4,20 @@ Entity identification processor.
 This processor identifies sensitive information in text using the LLM.
 """
 
-import logging 
-logger = logging.getLogger(__name__)
-import re
+import logging
 from typing import Dict, Any, List
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
+
+logger = logging.getLogger(__name__)
+
 
 class IdentificationProcessor(BaseProcessor):
     """
     Processor that identifies sensitive information in text.
-    
+
     This processor uses the LLM strategy to detect entities that require anonymization.
     """
-    
+
     def process(self, text: str, **kwargs) -> Dict[str, Any]:
         """
         Process the input text to identify sensitive entities.
@@ -47,11 +48,13 @@ class IdentificationProcessor(BaseProcessor):
 
                 # Extract entities for this chunk
                 entities_chunk = self._get_brackets_entities(identified_chunk)
-                chunks_info.append({
-                    "chunk_text": chunk,
-                    "anonymized_text": identified_chunk,
-                    "entities": entities_chunk
-                })
+                chunks_info.append(
+                    {
+                        "chunk_text": chunk,
+                        "anonymized_text": identified_chunk,
+                        "entities": entities_chunk,
+                    }
+                )
 
             # Unir los resultados
             text_identify = " ".join(identified_chunks)
@@ -61,7 +64,7 @@ class IdentificationProcessor(BaseProcessor):
             return {
                 "anonymized_text": text_identify,
                 "entities": entities,
-                "chunks": chunks_info
+                "chunks": chunks_info,
             }
 
         except Exception as e:
@@ -94,4 +97,3 @@ class IdentificationProcessor(BaseProcessor):
             chunks.append(" ".join(current_chunk))
 
         return chunks
-    

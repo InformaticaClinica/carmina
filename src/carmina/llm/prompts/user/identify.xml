@@ -1,6 +1,6 @@
 <user_prompt>
     <task>
-        Process the following text by substituting the quasi-identifier attributes:
+    Return the text identifying quasi-identifiers by marking them as [**value**], without replacing the content.
     </task>
     <input_text>
     </input_text>
