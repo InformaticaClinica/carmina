@@ -5,17 +5,16 @@ This module defines the main pipeline that orchestrates the entire
 anonymization process from raw text to fully anonymized output.
 """
 
+import nltk
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
-import nltk
 
 nltk.download("punkt_tab")
+
 from nltk.tokenize import sent_tokenize
-
-
-import os
 from typing import Dict, List, Any, Optional
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
