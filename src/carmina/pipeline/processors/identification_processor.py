@@ -29,44 +29,17 @@ class IdentificationProcessor(BaseProcessor):
         Returns:
             Dictionary containing identified entities
         """
-        filename = kwargs.get("filename", "unknown")
-
         if not self._validate_input(text):
             return {"entities": {}, "error": "Invalid input text"}
 
         try:
-            # Always chunk text into 100-token chunks
-            chunk_size = 100
-            chunks = self._chunk_text(text, chunk_size)
-            identified_chunks = []
-            chunks_info = []
-
-            for i, chunk in enumerate(chunks, 1):
-                logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
-                identified_chunk = self.llm_strategy.identify(chunk)
-                identified_chunks.append(identified_chunk)
-
-                # Extract entities for this chunk
-                entities_chunk = self._get_brackets_entities(identified_chunk)
-                chunks_info.append(
-                    {
-                        "chunk_text": chunk,
-                        "anonymized_text": identified_chunk,
-                        "entities": entities_chunk,
-                    }
-                )
-
-            # Unir los resultados
-            text_identify = " ".join(identified_chunks)
-
+            text_identify = self.llm_strategy.identify(text)
             entities = self._get_brackets_entities(text_identify)
             logging.info(f"Identified entities: {entities}")
             return {
                 "anonymized_text": text_identify,
                 "entities": entities,
-                "chunks": chunks_info,
             }
-
         except Exception as e:
             logging.error(f"Error in identification process: {e}")
             return {"entities": {}, "error": str(e)}

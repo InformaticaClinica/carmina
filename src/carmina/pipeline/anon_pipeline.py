@@ -169,6 +169,7 @@ class AnonymizationPipeline:
             processed_chunks: The output is a list of dictionaries of each chunk
         """
         processed_chunks = []
+        logging.info(f"Number of chunks {chunks}")
         for chunk in chunks:
             identified = self.identify(chunk)
             processed_chunk = {
