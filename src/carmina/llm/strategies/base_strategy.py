@@ -216,7 +216,7 @@ class BaseLLMStrategy(ABC):
         """
         return self.cloud_provider.get_name()
 
-    def process_for_anonymization(self, text: str, strategy: str) -> Dict[str, Any]:
+    def process_for_anonymization(self, text: str, strategy: str) -> str:
         """
         Process text specifically for anonymization tasks.
 
@@ -231,4 +231,3 @@ class BaseLLMStrategy(ABC):
         messages = self.get_message(strategy, text)
         inference_params = self.get_inference_params()
         return self.run_inference(messages, inference_params)
-

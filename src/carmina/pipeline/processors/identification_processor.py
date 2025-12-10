@@ -31,11 +31,10 @@ class IdentificationProcessor(BaseProcessor):
         """
         if not self._validate_input(text):
             return {"entities": {}, "error": "Invalid input text"}
-
         try:
             text_identify = self.llm_strategy.identify(text)
             entities = self._get_brackets_entities(text_identify)
-            logging.info(f"Identified entities: {entities}")
+            logging.debug(f"Identified entities: {entities}")
             return {
                 "anonymized_text": text_identify,
                 "entities": entities,

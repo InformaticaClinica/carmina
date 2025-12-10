@@ -169,8 +169,10 @@ class AnonymizationPipeline:
             processed_chunks: The output is a list of dictionaries of each chunk
         """
         processed_chunks = []
-        logging.info(f"Number of chunks {chunks}")
-        for chunk in chunks:
+        logging.info(f"Number of chunks {len(chunks)}")
+        n_chunks = len(chunks)
+        for i, chunk in enumerate(chunks):
+            logging.info(f"Iteration chunk {i + 1}/{n_chunks}")
             identified = self.identify(chunk)
             processed_chunk = {
                 "original_text": chunk,
@@ -178,13 +180,9 @@ class AnonymizationPipeline:
                 "entities_identified": identified.get("entities"),
             }
             if self.anonymization_mode != "identify":
-                anonymized = self.anonymize(
-                    text=identified.get("anonymized_text"), identified_result=identified
-                )
-                processed_chunk["anonymized_text"] = (
-                    anonymized.get("anonymized_text"),
-                )
-                processed_chunk["entities_anonymized"] = (anonymized.get("entities"),)
+                anonymized = self.anonymize(text=identified.get("anonymized_text"))
+                processed_chunk["anonymized_text"] = anonymized.get("anonymized_text")
+                processed_chunk["entities_anonymized"] = anonymized.get("entities")
             processed_chunks.append(processed_chunk)
         return processed_chunks
 
@@ -205,9 +203,7 @@ class AnonymizationPipeline:
         else:
             return {}
 
-    def anonymize(
-        self, text: str, identified_result: Dict[str, Any], filename: str = "unknown"
-    ) -> Dict[str, Any]:
+    def anonymize(self, text: str) -> Dict[str, Any]:
         """
         Anonymize the input text using the configured LLM strategy.
 
@@ -220,9 +216,7 @@ class AnonymizationPipeline:
             Anonymized text
         """
         if self.anonymizer is not None:
-            return self.anonymizer.process(text, filename=filename)
-        else:
-            return identified_result
+            return self.anonymizer.process(text)
 
     # TODO: Refactor file
     @staticmethod

@@ -32,6 +32,7 @@ class LocalProvider(BaseCloudProvider):
         # Qwen models
         "qwen-3-1.7b": "qwen3:1.7b",
         "qwen-3-32b": "qwen3:32b",
+        "qwen-3-4b": "qwen3:4b",
         # Mistral models
         "mistral": "mistral:latest",
         # Deepseek models
