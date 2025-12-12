@@ -24,8 +24,8 @@ from src.carmina.pipeline.processors.identification_processor import (
 from src.carmina.pipeline.processors.labeling_processor import LabelingProcessor
 from src.carmina.pipeline.processors.substitution_processor import SubstitutionProcessor
 
-MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE", "100"))
-CHUNK_BOOL = bool(os.getenv("CHUNK_BOOL", False))
+MAX_CHUNK_SIZE = 100
+CHUNK_BOOL = False
 
 
 class AnonymizationPipeline:
@@ -71,7 +71,7 @@ class AnonymizationPipeline:
         )
 
     def _get_first_document(self) -> Optional[int]:
-        return int(os.environ.get("FIRST_DOCUMENT_TO_PROCESS"))
+        return int(os.environ.get("FIRST_DOCUMENT_TO_PROCESS", "0"))
 
     def _get_max_documents_from_env(self) -> Optional[int]:
         """
@@ -144,7 +144,7 @@ class AnonymizationPipeline:
                 else:
                     # TODO: Refactor
                     identified = self.identify(text)
-                    processed_chunk = {
+                    processed_chunks = {
                         "original_text": text,
                         "identified_text": identified.get("anonymized_text"),
                         "entities_identified": identified.get("entities"),
@@ -153,10 +153,10 @@ class AnonymizationPipeline:
                         anonymized = self.anonymize(
                             text=identified.get("anonymized_text")
                         )
-                        processed_chunk["anonymized_text"] = anonymized.get(
+                        processed_chunks["anonymized_text"] = anonymized.get(
                             "anonymized_text"
                         )
-                        processed_chunk["entities_anonymized"] = anonymized.get(
+                        processed_chunks["entities_anonymized"] = anonymized.get(
                             "entities"
                         )
 
