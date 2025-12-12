@@ -35,7 +35,7 @@ class LabelingProcessor(BaseProcessor):
             logging.debug(f"Identified entities: {entities}")
             return {
                 "anonymized_text": results,
-                "entites": entities,
+                "entities": entities,
             }
 
         except Exception as e:
@@ -84,4 +84,3 @@ class LabelingProcessor(BaseProcessor):
         labels = []
         # Logic to extract and return labels from text
         return labels
-
