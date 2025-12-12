@@ -34,6 +34,7 @@ class AWSProvider(BaseCloudProvider):
         "claude-4.5-haiku": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
         "claude-3.7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         "claude-4.0-sonnet": "us.anthropic.claude-sonnet-4-20250514-v1:0",  # no funciona
+        "claude-4.5-sonnet": "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
         "claude-3.5-sonnet": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "claude-3.5-sonnet-v2": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "claude-4-opus": "us.anthropic.claude-opus-4-20250514-v1:0",  # no funciona
