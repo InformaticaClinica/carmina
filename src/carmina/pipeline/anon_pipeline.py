@@ -25,6 +25,7 @@ from src.carmina.pipeline.processors.labeling_processor import LabelingProcessor
 from src.carmina.pipeline.processors.substitution_processor import SubstitutionProcessor
 
 MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE", "100"))
+CHUNK_BOOL = bool(os.getenv("CHUNK_BOOL", False))
 
 
 class AnonymizationPipeline:
@@ -137,8 +138,27 @@ class AnonymizationPipeline:
                     continue
 
                 # Step 2: Anonimized
-                chunk_text = self.get_text_chunks(text)
-                processed_chunks = self.run_chunk_identify(chunk_text)
+                if CHUNK_BOOL:
+                    chunk_text = self.get_text_chunks(text)
+                    processed_chunks = self.run_chunk_identify(chunk_text)
+                else:
+                    # TODO: Refactor
+                    identified = self.identify(text)
+                    processed_chunk = {
+                        "original_text": text,
+                        "identified_text": identified.get("anonymized_text"),
+                        "entities_identified": identified.get("entities"),
+                    }
+                    if self.anonymization_mode != "identify":
+                        anonymized = self.anonymize(
+                            text=identified.get("anonymized_text")
+                        )
+                        processed_chunk["anonymized_text"] = anonymized.get(
+                            "anonymized_text"
+                        )
+                        processed_chunk["entities_anonymized"] = anonymized.get(
+                            "entities"
+                        )
 
                 # Step 3: Store
                 filename = record.get("id", "unknown")
