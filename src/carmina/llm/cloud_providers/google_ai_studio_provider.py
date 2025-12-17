@@ -139,7 +139,7 @@ class GoogleAIStudioProvider(BaseCloudProvider):
                 top_k=kwargs.get("top_k"),
             )
 
-    def check_user_message(self, messages: list) -> bool:
+    def check_user_message(self, messages: list[str]):
         if len(messages) > 1:
             raise ValueError(
                 "Multiple user messages are not supported in Google AI Studio."
@@ -148,4 +148,3 @@ class GoogleAIStudioProvider(BaseCloudProvider):
             raise ValueError("No user message provided.")
         elif len(messages) == 1:
             return messages[0]
-

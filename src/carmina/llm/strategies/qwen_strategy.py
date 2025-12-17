@@ -4,7 +4,6 @@ from typing import List, Dict, Any
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
-from src.carmina.llm.model_config import MODEL_CONFIGS
 from src.carmina.llm.utils.token_counter import get_token_counter
 
 
