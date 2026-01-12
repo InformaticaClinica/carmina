@@ -13,6 +13,7 @@ from src.carmina.llm.cloud_providers.cloud_provider_factory import CloudProvider
 from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
 from src.carmina.llm.strategies.deepseek_strategy import DeepSeekStrategy
 from src.carmina.llm.strategies.gemini_strategy import GeminiStrategy
+from src.carmina.llm.strategies.vertex_gemini_strategy import VertexGeminiStrategy
 from src.carmina.llm.strategies.openai_strategy import OpenAIStrategy
 from src.carmina.llm.strategies.llama_strategy import LlamaStrategy
 from src.carmina.llm.strategies.qwen_strategy import QwenStrategy
@@ -67,6 +68,14 @@ class LLMFactory:
         # Initialize the cloud provider
         provider = CloudProviderFactory.create(cloud_provider, **provider_kwargs)
         
+        # Special case: Vertex AI with Gemini models uses VertexGeminiStrategy
+        if cloud_provider == "vertex_ai" and cls._is_gemini_model(model_name):
+            return VertexGeminiStrategy(
+                model_name=model_name,
+                cloud_provider=provider,
+                **strategy_kwargs
+            )
+        
         # Find the appropriate strategy for the model name
         strategy_class = cls._get_strategy_for_model(model_name)
         
@@ -76,6 +85,20 @@ class LLMFactory:
             cloud_provider=provider,
             **strategy_kwargs
         )
+
+    @classmethod
+    def _is_gemini_model(cls, model_name: str) -> bool:
+        """
+        Check if a model name corresponds to a Gemini model.
+        
+        Args:
+            model_name: Name of the model to check
+            
+        Returns:
+            True if the model is a Gemini model, False otherwise
+        """
+        model_name_lower = model_name.lower()
+        return "gemini" in model_name_lower or "gemma" in model_name_lower
 
     @classmethod
     def _get_strategy_for_model(cls, model_name: str) -> Type[BaseLLMStrategy]:

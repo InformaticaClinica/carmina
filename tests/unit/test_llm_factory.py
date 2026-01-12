@@ -26,10 +26,18 @@ class TestLLMFactory:
         strategy_class = LLMFactory._get_strategy_for_model("gemini-2.0-flash")
         assert strategy_class.__name__ == "GeminiStrategy"
     
+    def test_is_gemini_model(self):
+        """Test Gemini model detection helper."""
+        assert LLMFactory._is_gemini_model("gemini-2.5-flash") is True
+        assert LLMFactory._is_gemini_model("gemini-1.5-pro") is True
+        assert LLMFactory._is_gemini_model("gemma-3-27b") is True
+        assert LLMFactory._is_gemini_model("gpt-4") is False
+        assert LLMFactory._is_gemini_model("claude-3.5-sonnet") is False
+    
     def test_get_strategy_for_model_deepseek(self):
         """Test getting strategy for DeepSeek models."""
         strategy_class = LLMFactory._get_strategy_for_model("deepseek-v3")
-        assert strategy_class.__name__ == "DeepseekStrategy"
+        assert strategy_class.__name__ == "DeepSeekStrategy"
     
     def test_get_strategy_for_model_llama(self):
         """Test getting strategy for Llama models."""
@@ -38,7 +46,7 @@ class TestLLMFactory:
     
     def test_get_strategy_for_model_unknown(self):
         """Test getting strategy for unknown model raises error."""
-        with pytest.raises(ValueError, match="Unknown model"):
+        with pytest.raises(ValueError, match="No suitable strategy found"):
             LLMFactory._get_strategy_for_model("unknown-model")
     
     @patch('src.carmina.llm.factory.CloudProviderFactory')
@@ -105,3 +113,29 @@ class TestLLMFactory:
             )
             
             assert result == mock_strategy
+    
+    @patch('src.carmina.llm.factory.CloudProviderFactory')
+    def test_create_vertex_ai_gemini_strategy(self, mock_provider_factory):
+        """Test that Vertex AI + Gemini creates VertexGeminiStrategy."""
+        from src.carmina.llm.strategies.vertex_gemini_strategy import VertexGeminiStrategy
+        
+        # Mock Vertex AI provider
+        mock_provider = MagicMock()
+        mock_provider.get_name.return_value = "vertex_ai"
+        mock_provider_factory.create.return_value = mock_provider
+        
+        with patch.dict('os.environ', {
+            'ANONYMIZATION_MODE': 'identify',
+            'TEMPERATURE': '0.7',
+            'MAX_TOKENS': '1024'
+        }):
+            result = LLMFactory.create(
+                model_name="gemini-2.5-flash",
+                cloud_provider="vertex_ai",
+                strategy_kwargs={"anonymization_mode": "identify"}
+            )
+        
+        # Verify it's a VertexGeminiStrategy
+        assert isinstance(result, VertexGeminiStrategy)
+        assert result.model_name == "gemini-2.5-flash"
+        assert result.provider_name == "vertex_ai"
