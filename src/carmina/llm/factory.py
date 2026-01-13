@@ -68,7 +68,6 @@ class LLMFactory:
 
         # Initialize the cloud provider
         provider = CloudProviderFactory.create(cloud_provider, **provider_kwargs)
-<<<<<<< HEAD
         
         # Special case: Vertex AI with Gemini models uses VertexGeminiStrategy
         if cloud_provider == "vertex_ai" and cls._is_gemini_model(model_name):
@@ -78,9 +77,6 @@ class LLMFactory:
                 **strategy_kwargs
             )
         
-=======
-
->>>>>>> develop
         # Find the appropriate strategy for the model name
         strategy_class = cls._get_strategy_for_model(model_name)
 
