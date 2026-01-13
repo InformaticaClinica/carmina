@@ -5,6 +5,7 @@ from src.carmina.tools.benchmark_summary import BenchmarkSummary
 from src.carmina.metrics.timer import measure_time
 from src.carmina.metrics.recorder import MetricsRecorder
 
+
 class BenchmarkRunner:
     """
     The BenchmarkRunner class is responsible for orchestrating the execution of benchmarks
@@ -18,16 +19,17 @@ class BenchmarkRunner:
         output_dir (str): The directory where output files will be saved, loaded from the "OUTPUT_DIR" environment variable.
         metrics_dir (str): The directory where metrics files will be saved, loaded from the "METRICS_DIR" environment variable.
     """
+
     def __init__(self):
         load_dotenv()
-        self.models = os.getenv("MODELS").split(",")
-        self.anonymization_mode = os.getenv("ANONYMIZATION_MODE")
-        self.cloud_provider = os.getenv("CLOUD_PROVIDER")
-        self.input_path = os.getenv("INPUT_DIR")
-        self.output_dir = os.getenv("OUTPUT_DIR")
-        self.metrics_dir = os.getenv("METRICS_DIR")
-        self.debug = os.getenv("DEBUG")
-        self.debug_dir = os.getenv("DEBUG_DIR")
+        self.models = os.getenv("MODELS", "").split(",")
+        self.anonymization_mode = os.getenv("ANONYMIZATION_MODE", "")
+        self.cloud_provider = os.getenv("CLOUD_PROVIDER", "")
+        self.input_path = os.getenv("INPUT_DIR", "")
+        self.output_dir = os.getenv("OUTPUT_DIR", "")
+        self.metrics_dir = os.getenv("METRICS_DIR", "")
+        self.debug = os.getenv("DEBUG", "")
+        self.debug_dir = os.getenv("DEBUG_DIR", "")
 
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.metrics_dir, exist_ok=True)

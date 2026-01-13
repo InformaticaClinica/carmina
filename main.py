@@ -9,7 +9,7 @@ from src.carmina.utils.logging_config import setup_logging
 if __name__ == "__main__":
     logger = setup_logging()
     logger.info("Starting Carmina application")
-    
+
     BenchmarkRunner().run()
-    
+
     logger.info("Carmina application completed successfully")

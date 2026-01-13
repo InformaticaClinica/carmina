@@ -1,17 +1,17 @@
 import openai
-import os
-from typing import List, Dict, Any
+from typing import List, Dict
 
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.llm.utils.prompt_loader import load_system_prompt
-from src.carmina.llm.model_config import MODEL_CONFIGS
 from src.carmina.llm.utils.token_counter import get_token_counter
+
 
 class OpenAIStrategy(BaseLLMStrategy):
     """
     Implementation for OpenAI models.
     """
+
     # Dictionary to map model names to their context windows
     _context_windows = {
         "gpt-3.5-turbo": 4096,
@@ -24,15 +24,17 @@ class OpenAIStrategy(BaseLLMStrategy):
     def __init__(self, model_name, cloud_provider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
         self.token_counter = get_token_counter(self.model_name, "openai")
-    
+
     def run_inference(self, messages, inference_params):
-        inference_params = {k: v for k, v in inference_params.items() if v is not None and (not hasattr(v, '__len__') or len(v) > 0)}
+        inference_params = {
+            k: v
+            for k, v in inference_params.items()
+            if v is not None and (not hasattr(v, "__len__") or len(v) > 0)
+        }
         messages = self.adapt_message(messages)
-        if self.provider_name == "openai":
+        if self.provider_name == "openai" or self.provider_name == "local":
             return self.cloud_provider.run_inference(
-                model_id=self.model_name,
-                messages=messages,
-                **inference_params
+                model_id=self.model_name, messages=messages, **inference_params
             )
 
     def batch_identify(self, texts: List[str], **kwargs) -> List[str]:
@@ -54,10 +56,10 @@ class OpenAIStrategy(BaseLLMStrategy):
     def count_tokens(self, text: str) -> int:
         """
         Count tokens in the given text using OpenAI tokenizer.
-        
+
         Args:
             text: Text to count tokens for
-            
+
         Returns:
             Number of tokens in the text
         """
@@ -66,10 +68,10 @@ class OpenAIStrategy(BaseLLMStrategy):
     def adapt_message(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
         """
         Adapts the message format for OpenAI.
-        
+
         Args:
             messages: List of messages to adapt
-        
+
         Returns:
             List of adapted messages
         """
@@ -86,4 +88,3 @@ class OpenAIStrategy(BaseLLMStrategy):
             else:
                 raise ValueError(f"Unknown role: {role}")
         return adapted_messages
-

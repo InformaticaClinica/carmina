@@ -1,6 +1,6 @@
 <user_prompt>
     <task>
-        Process the following text by substituting the content inside [** **] markers with different, plausible, and contextually coherent values while maintaining the original format and markers
+        Process the following text by substituting the quasi-identifier attributes:
     </task>
     <input_text>
     </input_text>

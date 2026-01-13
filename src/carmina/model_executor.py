@@ -119,11 +119,27 @@ class ModelExecutor:
         ground_truth_identity_texts = [entity.get("identify", None) for entity in anonymized_records]
         if None in ground_truth_identity_texts:
             logging.warning("Some records are missing the 'identify' key.")
-        prediction_identity_texts = [entity["identified_text"] for entity in anonymized_records]
-        ground_truth_texts = [entity["masked_text"] for entity in anonymized_records]
-        prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
-        filenames = [entity["id"] for entity in anonymized_records]
-        languages = [self.get_language(entity["id"]) for entity in anonymized_records] #TODO: improve software design
+            
+        # Reconstruct texts from chunks if present, otherwise use direct value (backward compatibility)
+        prediction_identity_texts = []
+        prediction_texts = []
+        
+        for entity in anonymized_records:
+            if "chunks" in entity:
+                # Join chunks to form full text
+                # Note: This simple join might need adjustment based on how chunks were split (e.g. spaces)
+                pred_ident = " ".join([c.get("identified_text", "") for c in entity["chunks"]])
+                pred_anon = " ".join([c.get("anonymized_text", "") for c in entity["chunks"]])
+                prediction_identity_texts.append(pred_ident)
+                prediction_texts.append(pred_anon)
+            else:
+                # Fallback for non-chunked output or errors
+                prediction_identity_texts.append(entity.get("identified_text", ""))
+                prediction_texts.append(entity.get("anonymized_text", ""))
+
+        ground_truth_texts = [entity.get("masked_text", "") for entity in anonymized_records]
+        filenames = [entity.get("id", "unknown") for entity in anonymized_records]
+        languages = [self.get_language(entity.get("id", "")) for entity in anonymized_records] #TODO: improve software design
 
         
         recorder.record_all(
