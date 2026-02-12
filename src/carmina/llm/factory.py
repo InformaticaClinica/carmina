@@ -17,6 +17,7 @@ from src.carmina.llm.strategies.vertex_gemini_strategy import VertexGeminiStrate
 from src.carmina.llm.strategies.openai_strategy import OpenAIStrategy
 from src.carmina.llm.strategies.llama_strategy import LlamaStrategy
 from src.carmina.llm.strategies.qwen_strategy import QwenStrategy
+from src.carmina.llm.strategies.glm_strategy import GLMStrategy
 
 # from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 from src.carmina.llm.strategies.mock_strategy import MockLLMStrategy
@@ -35,6 +36,7 @@ class LLMFactory:
         "gemini": GeminiStrategy,
         "llama": LlamaStrategy,
         "qwen": QwenStrategy,
+        "glm": GLMStrategy,
         "gemma": GeminiStrategy,
         "mock": MockLLMStrategy,
         "mistral": MistralStrategy,
