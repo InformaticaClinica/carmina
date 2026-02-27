@@ -8,6 +8,10 @@ anonymization process from raw text to fully anonymized output.
 import nltk
 import logging
 import os
+import json
+import uuid
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +65,23 @@ class AnonymizationPipeline:
         # Configure document processing limit from environment variable
         self.first_document = self._get_first_document()
         self.max_documents = self._get_max_documents_from_env()
+        self.max_workers = self._get_max_workers_from_env()
         self.processed_count = 0
+        self.results_lock = threading.Lock()  # Thread-safe results access
+        
+        # Setup incremental save path
+        debug_dir = os.getenv("DEBUG_DIR", "data/outputs/debug/")
+        os.makedirs(debug_dir, exist_ok=True)
+        self.incremental_save_path = os.path.join(debug_dir, f"output_{llm_strategy.get_name()}_partial.json")
+        
+        # Handle existing partial file from previous run
+        if os.path.exists(self.incremental_save_path):
+            # Rename previous partial as backup
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = self.incremental_save_path.replace("_partial.json", f"_partial_backup_{timestamp}.json")
+            os.rename(self.incremental_save_path, backup_path)
+            logging.info(f"Previous partial results backed up to: {backup_path}")
 
         logging.info(
             f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode"
@@ -69,10 +89,32 @@ class AnonymizationPipeline:
         logging.info(
             f"Maximum documents to process: {self.max_documents if self.max_documents else 'No limit'}"
         )
+        logging.info(f"Parallel workers: {self.max_workers}")
+        logging.info(f"Incremental results will be saved to: {self.incremental_save_path}")
 
     def _get_first_document(self) -> Optional[int]:
         return int(os.environ.get("FIRST_DOCUMENT_TO_PROCESS", "0"))
 
+    def _get_max_workers_from_env(self) -> int:
+        """
+        Get the maximum number of parallel workers from environment variables.
+
+        Returns:
+            int: The maximum number of workers (default: 1 for sequential processing)
+        """
+        max_workers_str = os.environ.get("MAX_WORKERS")
+        if not max_workers_str:
+            return 1  # Default: sequential processing
+
+        try:
+            max_workers = int(max_workers_str)
+            return max(1, max_workers)  # Ensure at least 1 worker
+        except ValueError:
+            logging.warning(
+                "Invalid MAX_WORKERS value in .env, should be a positive integer. Using default: 1"
+            )
+            return 1
+    
     def _get_max_documents_from_env(self) -> Optional[int]:
         """
         Get the maximum number of documents to process from environment variables.
@@ -104,78 +146,170 @@ class AnonymizationPipeline:
         Returns:
             List of processed records with anonymized text and metadata
         """
-        results = []
-        total_to_process = (
-            self.max_documents
-            if self.max_documents
-            else len(records) - (self.first_document - 1 if self.first_document else 0)
-        )
-        count = 0
-        for record in records:
-            # Check if we've reached the processing limit
-            if self.first_document is not None and (count + 1) < self.first_document:
-                logging.info(
-                    f"Skipping record {count + 1} (first document limit not reached)"
-                )
-                count += 1
+        # Filter records based on first_document limit
+        records_to_process = []
+        for idx, record in enumerate(records):
+            if self.first_document is not None and (idx + 1) < self.first_document:
+                logging.info(f"Skipping record {idx + 1} (first document limit not reached)")
                 continue
-
-            if (
-                self.max_documents is not None
-                and self.processed_count >= self.max_documents
-            ):
-                logging.info(
-                    f"Reached maximum document limit ({self.max_documents}), stopping processing"
-                )
+            if self.max_documents is not None and len(records_to_process) >= self.max_documents:
                 break
-
-            try:
-                # Step 1: Extract the text content to process
-                text = record.get("text", "")
-                if not text:
-                    logging.warning("Empty text found in record, skipping")
-                    results.append({**record, "error": "Empty text"})
-                    continue
-
-                # Step 2: Anonimized
-                if CHUNK_BOOL:
-                    chunk_text = self.get_text_chunks(text)
-                    processed_chunks = self.run_chunk_identify(chunk_text)
-                else:
-                    # TODO: Refactor
-                    identified = self.identify(text)
-                    processed_chunks = {
-                        "original_text": text,
-                        "identified_text": identified.get("anonymized_text"),
-                        "entities_identified": identified.get("entities"),
-                    }
-                    if self.anonymization_mode != "identify":
-                        anonymized = self.anonymize(
-                            text=identified.get("anonymized_text")
-                        )
-                        processed_chunks["anonymized_text"] = anonymized.get(
-                            "anonymized_text"
-                        )
-                        processed_chunks["entities_anonymized"] = anonymized.get(
-                            "entities"
-                        )
-
-                # Step 3: Store
-                filename = record.get("id", "unknown")
-                output = {
-                    **record,  # Preserve original record data (ground truth)
-                    "namefile": filename,
-                    "chunks": processed_chunks,
-                }
-                results.append(output)
-                self.processed_count += 1
-                logging.info(f"{filename} {self.processed_count} / {total_to_process}")
-            except Exception as e:
-                logging.error(f"Error processing record: {e}")
-                results.append({**record, "error": str(e)})
-
+            records_to_process.append(record)
+        
+        total_to_process = len(records_to_process)
+        logging.info(f"Processing {total_to_process} documents with {self.max_workers} parallel worker(s)")
+        
+        # Process documents in parallel or sequentially
+        if self.max_workers == 1:
+            # Sequential processing (original behavior)
+            results = self._process_sequential(records_to_process, total_to_process)
+        else:
+            # Parallel processing with ThreadPoolExecutor
+            results = self._process_parallel(records_to_process, total_to_process)
+        
         logging.info(f"Completed processing {self.processed_count} documents")
         return results
+    
+    def _process_sequential(self, records: List[Dict[str, Any]], total_to_process: int) -> List[Dict[str, Any]]:
+        """
+        Process records sequentially (original behavior).
+        
+        Args:
+            records: List of records to process
+            total_to_process: Total number of documents to process
+            
+        Returns:
+            List of processed records
+        """
+        results = []
+        for record in records:
+            result = self._process_single_record(record, total_to_process)
+            results.append(result)
+            # Save partial results after each document
+            with self.results_lock:
+                self._save_partial_results(results)
+        return results
+    
+    def _process_parallel(self, records: List[Dict[str, Any]], total_to_process: int) -> List[Dict[str, Any]]:
+        """
+        Process records in parallel using ThreadPoolExecutor.
+        
+        Args:
+            records: List of records to process
+            total_to_process: Total number of documents to process
+            
+        Returns:
+            List of processed records (order preserved)
+        """
+        results = [None] * len(records)  # Pre-allocate to preserve order
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks with their index
+            future_to_index = {
+                executor.submit(self._process_single_record, record, total_to_process): idx
+                for idx, record in enumerate(records)
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_index):
+                idx = future_to_index[future]
+                try:
+                    result = future.result()
+                    results[idx] = result
+                    
+                    # Save partial results (thread-safe)
+                    with self.results_lock:
+                        # Get only completed results (non-None) for saving
+                        completed_results = [r for r in results if r is not None]
+                        self._save_partial_results(completed_results)
+                        
+                except Exception as e:
+                    logging.error(f"Error in parallel processing: {e}")
+                    results[idx] = {**records[idx], "error": str(e)}
+        
+        return results
+    
+    def _process_single_record(self, record: Dict[str, Any], total_to_process: int) -> Dict[str, Any]:
+        """
+        Process a single record through the anonymization pipeline.
+        
+        Args:
+            record: Record to process
+            total_to_process: Total number of documents being processed
+            
+        Returns:
+            Processed record with anonymization results
+        """
+        # Generate unique ID for this processing task
+        task_id = str(uuid.uuid4())[:8]
+        
+        try:
+            # Step 1: Extract the text content to process
+            text = record.get("text", "")
+            filename = record.get("id", "unknown")
+            
+            if not text:
+                logging.warning(f"[{task_id}] Empty text found in record {filename}, skipping")
+                return {**record, "error": "Empty text"}
+            
+            logging.info(f"[{task_id}] Processing {filename}")
+            
+            # Step 2: Anonymize
+            if CHUNK_BOOL:
+                chunk_text = self.get_text_chunks(text)
+                processed_chunks = self.run_chunk_identify(chunk_text)
+            else:
+                # TODO: Refactor
+                identified = self.identify(text)
+                processed_chunks = {
+                    "original_text": text,
+                    "identified_text": identified.get("anonymized_text"),
+                    "entities_identified": identified.get("entities"),
+                }
+                if self.anonymization_mode != "identify":
+                    anonymized = self.anonymize(
+                        text=identified.get("anonymized_text")
+                    )
+                    processed_chunks["anonymized_text"] = anonymized.get(
+                        "anonymized_text"
+                    )
+                    processed_chunks["entities_anonymized"] = anonymized.get(
+                        "entities"
+                    )
+            
+            # Step 3: Prepare output
+            output = {
+                **record,  # Preserve original record data (ground truth)
+                "namefile": filename,
+                "chunks": processed_chunks,
+                "processing_task_id": task_id,  # Add unique identifier
+            }
+            
+            # Thread-safe increment of processed count
+            with self.results_lock:
+                self.processed_count += 1
+                current_count = self.processed_count
+            
+            logging.info(f"[{task_id}] {filename} completed ({current_count} / {total_to_process})")
+            return output
+            
+        except Exception as e:
+            logging.error(f"[{task_id}] Error processing record {record.get('id', 'unknown')}: {e}")
+            return {**record, "error": str(e), "processing_task_id": task_id}
+    
+    def _save_partial_results(self, results: List[Dict[str, Any]]) -> None:
+        """
+        Save partial results incrementally after each document.
+        
+        Args:
+            results: Current list of processed results
+        """
+        try:
+            with open(self.incremental_save_path, "w", encoding="utf-8") as f:
+                json.dump(results, f, indent=2, ensure_ascii=False)
+            logging.debug(f"Partial results saved: {len(results)} documents")
+        except Exception as e:
+            logging.error(f"Error saving partial results: {e}")
 
     def run_chunk_identify(self, chunks):
         """
