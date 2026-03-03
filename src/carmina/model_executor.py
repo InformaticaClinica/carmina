@@ -125,17 +125,17 @@ class ModelExecutor:
         prediction_texts = []
         
         for entity in anonymized_records:
-            if "chunks" in entity:
-                # Join chunks to form full text
-                # Note: This simple join might need adjustment based on how chunks were split (e.g. spaces)
-                pred_ident = " ".join([c.get("identified_text", "") for c in entity["chunks"]])
-                pred_anon = " ".join([c.get("anonymized_text", "") for c in entity["chunks"]])
+            chunks = entity.get("chunks")
+            # chunks may be a list of dicts, a string repr, or absent
+            if isinstance(chunks, list) and chunks and isinstance(chunks[0], dict):
+                pred_ident = " ".join([c.get("identified_text", "") for c in chunks])
+                pred_anon = " ".join([c.get("anonymized_text", "") for c in chunks])
                 prediction_identity_texts.append(pred_ident)
                 prediction_texts.append(pred_anon)
             else:
-                # Fallback for non-chunked output or errors
-                prediction_identity_texts.append(entity.get("identified_text", ""))
-                prediction_texts.append(entity.get("anonymized_text", ""))
+                # Fallback: chunks absent, a string, or non-dict list
+                prediction_identity_texts.append(entity.get("identify", entity.get("identified_text", "")))
+                prediction_texts.append(entity.get("masked_text", entity.get("anonymized_text", "")))
 
         ground_truth_texts = [entity.get("masked_text", "") for entity in anonymized_records]
         filenames = [entity.get("id", "unknown") for entity in anonymized_records]

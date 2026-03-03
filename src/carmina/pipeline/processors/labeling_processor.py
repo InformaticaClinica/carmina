@@ -29,6 +29,7 @@ class LabelingProcessor(BaseProcessor):
         """
         if not self._validate_input(text):
             return {"anonymized_text": "", "error": "Invalid input text"}
+        entities = []
         try:
             results = self.llm_strategy.process_for_anonymization(text, "labeling")
             entities = self._get_brackets_entities(results)

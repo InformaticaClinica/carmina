@@ -39,11 +39,24 @@ class VertexAIProvider(BaseCloudProvider):
     
     def __init__(self, **kwargs):
         self.project_id = kwargs.get("project_id") or os.environ.get("VERTEX_PROJECT_ID")
-        self.location = kwargs.get("location") or os.environ.get("VERTEX_LOCATION", "us-central1")
+        self.location = kwargs.get("location") or os.environ.get("VERTEX_LOCATION", "global")
         self.timeout = kwargs.get("timeout", 60)  # Default 60 seconds timeout
         
         if not self.project_id:
             raise ValueError("Project ID is required for Vertex AI provider.")
+        
+        # Set GOOGLE_APPLICATION_CREDENTIALS from .env if not already set
+        creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if creds_path and not os.path.isabs(creds_path):
+            # If it's a relative path, make it absolute from project root
+            from pathlib import Path
+            project_root = Path(__file__).parent.parent.parent.parent
+            abs_creds_path = project_root / creds_path
+            if abs_creds_path.exists():
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(abs_creds_path)
+                logging.info(f"Using credentials from: {abs_creds_path}")
+            else:
+                logging.warning(f"Credentials file not found at: {abs_creds_path}")
         
         try:
             credentials, project = default()
@@ -74,6 +87,7 @@ class VertexAIProvider(BaseCloudProvider):
             "gemini-1.5-pro": "gemini-1.5-pro",
             "gemini-1.5-flash": "gemini-1.5-flash",
             "gemini-3.0-pro":"gemini-3-pro-preview",
+            "gemini-3.1-pro-preview": "gemini-3.1-pro-preview",
             "gemini-3-flash" : "gemini-3-flash-preview"
         }
         
