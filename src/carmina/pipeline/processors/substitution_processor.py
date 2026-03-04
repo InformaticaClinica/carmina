@@ -36,12 +36,12 @@ class SubstitutionProcessor(BaseProcessor):
             logging.debug(f"Identified entities: {entities}")
             return {
                 "anonymized_text": results,
-                "entites": entities,
+                "entities": entities,
             }
 
         except Exception as e:
             logging.error(f"Error in substitution process: {e}")
-            return {"anonymized_text": text, "entities": entities, "error": str(e)}
+            raise
 
     def _chunk_text(self, text: str, chunk_size: int) -> List[str]:
         """

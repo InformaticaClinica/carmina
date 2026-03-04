@@ -36,29 +36,31 @@ class BenchmarkSummary:
             if os.path.exists(path):
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    summary[model] = data
+                # data is a list; the first element is the full metrics dict
+                # produced by extract_all_metrics: {"metrics": {...}, "files": [...]}
+                metrics_entry = data[0] if isinstance(data, list) and data else data
+                summary[model] = metrics_entry
 
-                # Print individual model metrics per file
                 print(f"\n🔍 Métricas para {model}:")
-                for file_result in summary[model]:
-                    file_name = file_result.get('file', 'unknown')
-                    print(f"  Archivo: {file_name}")
-                    for key, value in file_result.items():
-                        if key == 'file':
-                            continue
-                        if key == 'execution_time':
-                            value = format_execution_time(value)
-                        print(f"    {key}: {value}")
+                top_metrics = metrics_entry.get("metrics", {}) if isinstance(metrics_entry, dict) else {}
+                for section, values in top_metrics.items():
+                    print(f"  [{section}]")
+                    if isinstance(values, dict):
+                        for k, v in values.items():
+                            if k == "execution_time":
+                                v = format_execution_time(v)
+                            print(f"    {k}: {v}")
 
-                # Aggregate metrics across all files for this model
-                for file_result in data:
-                    for key, value in file_result.items():
-                        if key == 'file':
-                            continue
+                # Aggregate numeric leaf metrics across models
+                for section, values in top_metrics.items():
+                    if not isinstance(values, dict):
+                        continue
+                    for key, value in values.items():
                         if isinstance(value, (int, float)):
-                            if key not in aggregated:
-                                aggregated[key] = []
-                            aggregated[key].append(value)
+                            agg_key = f"{section}_{key}"
+                            if agg_key not in aggregated:
+                                aggregated[agg_key] = []
+                            aggregated[agg_key].append(value)
             else:
                 print(f"⚠️ No se encontró archivo de métricas para {model}")
 

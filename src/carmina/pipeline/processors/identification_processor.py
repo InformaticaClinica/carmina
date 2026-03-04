@@ -41,7 +41,7 @@ class IdentificationProcessor(BaseProcessor):
             }
         except Exception as e:
             logging.error(f"Error in identification process: {e}")
-            return {"entities": {}, "error": str(e)}
+            raise
 
     def _chunk_text(self, text: str, chunk_size: int) -> List[str]:
         """

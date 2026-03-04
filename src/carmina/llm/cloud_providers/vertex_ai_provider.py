@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import threading
 from pathlib import Path
 
 from google import genai
@@ -8,7 +9,7 @@ from google.genai import types
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError
 from google.api_core.exceptions import ResourceExhausted, InternalServerError, ServiceUnavailable
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 from typing import Optional, Dict, Any, List
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
@@ -36,6 +37,7 @@ class VertexAIProvider(BaseCloudProvider):
     # Model ID mappings (loaded from config or fallback to defaults)
     _vertex_model_ids = None
     _config_loaded = False
+    _config_lock = threading.Lock()  # Guards class-level config initialisation
     
     def __init__(self, **kwargs):
         self.project_id = kwargs.get("project_id") or os.environ.get("VERTEX_PROJECT_ID")
@@ -69,9 +71,10 @@ class VertexAIProvider(BaseCloudProvider):
             location=self.location
         )
         
-        # Load model mappings from config on first initialization
-        if not VertexAIProvider._config_loaded:
-            self._load_model_mappings()
+        # Load model mappings from config on first initialization (thread-safe)
+        with VertexAIProvider._config_lock:
+            if not VertexAIProvider._config_loaded:
+                self._load_model_mappings()
         
         logging.info(f"Vertex AI Provider initialized (project={self.project_id}, location={self.location})")
     
@@ -108,8 +111,9 @@ class VertexAIProvider(BaseCloudProvider):
     
     @retry(
         retry=retry_if_exception_type((ResourceExhausted, InternalServerError, ServiceUnavailable)),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(6),
+        wait=wait_exponential(multiplier=2, min=5, max=60),
+        before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
         reraise=True
     )
     def run_inference(self, model_id: str, messages: dict, **kwargs) -> str:

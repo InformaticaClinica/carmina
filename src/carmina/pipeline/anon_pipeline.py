@@ -22,6 +22,7 @@ from nltk.tokenize import sent_tokenize
 from typing import Dict, List, Any, Optional
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
+from src.carmina.utils.logging_config import set_task_id
 from src.carmina.pipeline.processors.identification_processor import (
     IdentificationProcessor,
 )
@@ -61,13 +62,17 @@ class AnonymizationPipeline:
             self.anonymizer = LabelingProcessor(llm_strategy)
         elif self.anonymization_mode == "substitute":
             self.anonymizer = SubstitutionProcessor(llm_strategy)
+        else:
+            logging.warning(f"Unknown anonymization_mode '{self.anonymization_mode}', anonymizer disabled")
+            self.anonymizer = None
 
         # Configure document processing limit from environment variable
         self.first_document = self._get_first_document()
         self.max_documents = self._get_max_documents_from_env()
         self.max_workers = self._get_max_workers_from_env()
         self.processed_count = 0
-        self.results_lock = threading.Lock()  # Thread-safe results access
+        self.results_lock = threading.Lock()   # Guards processed_count (worker threads)
+        self.save_lock = threading.Lock()       # Guards incremental file writes (main thread)
         
         # Setup incremental save path
         debug_dir = os.getenv("DEBUG_DIR", "data/outputs/debug/")
@@ -186,7 +191,7 @@ class AnonymizationPipeline:
             result = self._process_single_record(record, total_to_process)
             results.append(result)
             # Save partial results after each document
-            with self.results_lock:
+            with self.save_lock:
                 self._save_partial_results(results)
         return results
     
@@ -216,16 +221,22 @@ class AnonymizationPipeline:
                 try:
                     result = future.result()
                     results[idx] = result
-                    
-                    # Save partial results (thread-safe)
-                    with self.results_lock:
-                        # Get only completed results (non-None) for saving
+
+                    # Save partial results — use dedicated save lock so it doesn't
+                    # block worker threads that only need the count lock
+                    with self.save_lock:
                         completed_results = [r for r in results if r is not None]
                         self._save_partial_results(completed_results)
-                        
+
                 except Exception as e:
-                    logging.error(f"Error in parallel processing: {e}")
+                    logging.error(f"Error in parallel processing for record {idx}: {e}")
                     results[idx] = {**records[idx], "error": str(e)}
+        
+        # Safety: replace any remaining None slots with an error record
+        for idx, r in enumerate(results):
+            if r is None:
+                logging.error(f"Result slot {idx} is None after parallel processing — replacing with error record")
+                results[idx] = {**records[idx], "error": "Future did not complete"}
         
         return results
     
@@ -242,6 +253,8 @@ class AnonymizationPipeline:
         """
         # Generate unique ID for this processing task
         task_id = str(uuid.uuid4())[:8]
+        # Tag this thread so ALL log lines (including 3rd-party) carry the task_id
+        set_task_id(task_id)
         
         try:
             # Step 1: Extract the text content to process
@@ -249,10 +262,10 @@ class AnonymizationPipeline:
             filename = record.get("id", "unknown")
             
             if not text:
-                logging.warning(f"[{task_id}] Empty text found in record {filename}, skipping")
+                logging.warning(f"Empty text found in record {filename}, skipping")
                 return {**record, "error": "Empty text"}
             
-            logging.info(f"[{task_id}] Processing {filename}")
+            logging.info(f"Processing {filename}")
             
             # Step 2: Anonymize
             if CHUNK_BOOL:
@@ -290,12 +303,15 @@ class AnonymizationPipeline:
                 self.processed_count += 1
                 current_count = self.processed_count
             
-            logging.info(f"[{task_id}] {filename} completed ({current_count} / {total_to_process})")
+            logging.info(f"{filename} completed ({current_count} / {total_to_process})")
             return output
             
         except Exception as e:
-            logging.error(f"[{task_id}] Error processing record {record.get('id', 'unknown')}: {e}")
+            logging.error(f"Error processing record {record.get('id', 'unknown')}: {e}")
             return {**record, "error": str(e), "processing_task_id": task_id}
+        finally:
+            # Reset task_id so idle threads don't carry stale context
+            set_task_id("main")
     
     def _save_partial_results(self, results: List[Dict[str, Any]]) -> None:
         """
@@ -306,7 +322,7 @@ class AnonymizationPipeline:
         """
         try:
             with open(self.incremental_save_path, "w", encoding="utf-8") as f:
-                json.dump(results, f, indent=2, ensure_ascii=False)
+                json.dump(results, f, indent=2)
             logging.debug(f"Partial results saved: {len(results)} documents")
         except Exception as e:
             logging.error(f"Error saving partial results: {e}")
@@ -350,11 +366,9 @@ class AnonymizationPipeline:
         Returns:
             Dictionary with identified entities and their labels
         """
-        if self.identification is not None:
-            identified_result = self.identification.process(text)
-            return identified_result
-        else:
-            return {}
+        if self.identification is None:
+            raise RuntimeError("IdentificationProcessor is not initialised")
+        return self.identification.process(text)
 
     def anonymize(self, text: str) -> Dict[str, Any]:
         """
@@ -370,6 +384,7 @@ class AnonymizationPipeline:
         """
         if self.anonymizer is not None:
             return self.anonymizer.process(text)
+        return {"anonymized_text": text, "entities": []}
 
     # TODO: Refactor file
     @staticmethod

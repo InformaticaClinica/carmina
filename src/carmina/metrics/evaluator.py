@@ -55,12 +55,20 @@ def calculate_average_metrics(metrics: Dict[str, Any], typefile: str) -> Dict[st
 
     count = len(metrics)
     for file in metrics:
-        total["precision"] += file[typefile]["metrics"]["precision"]
-        total["recall"] += file[typefile]["metrics"]["recall"]
-        total["f1"] += file[typefile]["metrics"]["f1"]
-        total["cosine_sim"] += file[typefile]["metrics"]["cosine_similarity"]
-        total["levenshtein_distance"] += file[typefile]["metrics"]["levenshtein_distance"]
-        total["inv_levenshtein"] += file[typefile]["metrics"]["inv_levenshtein"]
+        file_data = file.get(typefile) if isinstance(file, dict) else None
+        if not file_data or not isinstance(file_data, dict):
+            count = max(count - 1, 0)
+            continue
+        file_metrics = file_data.get("metrics")
+        if not file_metrics or not isinstance(file_metrics, dict):
+            count = max(count - 1, 0)
+            continue
+        total["precision"] += file_metrics.get("precision", 0.0)
+        total["recall"] += file_metrics.get("recall", 0.0)
+        total["f1"] += file_metrics.get("f1", 0.0)
+        total["cosine_sim"] += file_metrics.get("cosine_similarity", 0.0)
+        total["levenshtein_distance"] += file_metrics.get("levenshtein_distance", 0.0)
+        total["inv_levenshtein"] += file_metrics.get("inv_levenshtein", 0.0)
     
     total["precision"] /= count if count > 0 else 1
     total["recall"] /= count if count > 0 else 1

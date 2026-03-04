@@ -4,8 +4,32 @@ Centralized logging configuration for the application.
 
 import logging
 import os
+import threading
 from datetime import datetime
 from typing import Dict, Any, Optional, List
+
+# Thread-local storage for per-task context
+_thread_local = threading.local()
+
+
+def set_task_id(task_id: str) -> None:
+    """
+    Set the task ID for the current thread.
+    All log records emitted by this thread will include this task_id.
+    Call with 'main' (or '') to clear the context.
+    """
+    _thread_local.task_id = task_id
+
+
+class ThreadTaskFilter(logging.Filter):
+    """
+    Injects task_id from thread-local storage into every log record.
+    This makes the task_id visible in ALL log messages produced by a thread,
+    including those from third-party libraries (httpx, google-genai, etc.).
+    """
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.task_id = getattr(_thread_local, "task_id", "main")
+        return True
 
 
 def setup_logging(config: Optional[Dict[str, Any]] = None):
@@ -21,7 +45,8 @@ def setup_logging(config: Optional[Dict[str, Any]] = None):
     # Get config from parameter or environment
     log_level_name = config.get("log_level") or os.getenv("LOG_LEVEL", "INFO")
     log_format = config.get("log_format") or os.getenv(
-        "LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "LOG_FORMAT",
+        "%(asctime)s - %(threadName)s [%(task_id)s] - %(name)s - %(levelname)s - %(message)s"
     )
     log_dir = config.get("log_dir") or os.getenv("LOG_DIR", "logs/")
     enable_console = config.get("enable_console", None)
@@ -47,10 +72,15 @@ def setup_logging(config: Optional[Dict[str, Any]] = None):
     log_file = f"{log_dir}/carmina_{timestamp}.log"
 
     # Set up handlers
-    handlers: List[logging.Handler] = [logging.FileHandler(log_file)]
+    task_filter = ThreadTaskFilter()
+    handlers: List[logging.Handler] = [logging.FileHandler(log_file, encoding="utf-8")]
     # # Especificamos que la lista acepta cualquier "logging.Handler"
     if enable_console:
         handlers.append(logging.StreamHandler())
+
+    # Apply task_id filter to every handler so ALL log records carry it
+    for h in handlers:
+        h.addFilter(task_filter)
 
     # Configure logging
     logging.basicConfig(level=log_level, format=log_format, handlers=handlers)
