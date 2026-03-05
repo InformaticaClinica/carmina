@@ -35,6 +35,17 @@ MODEL_CONFIGS = {
         "capabilities": ["identification", "anonymization"]
     },
     
+    # Qwen 3.5 models
+    "qwen-3.5-27b": {
+        "context_window": 131072,
+        "strategy": "qwen",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "qwen-3.5-122b": {
+        "context_window": 131072,
+        "strategy": "qwen",
+        "capabilities": ["identification", "anonymization"]
+    },
     # HuggingFace models
     "llama-3-8b": {
         "context_window": 8192,
