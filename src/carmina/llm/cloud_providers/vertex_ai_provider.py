@@ -9,7 +9,8 @@ from google.genai import types
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError
 from google.api_core.exceptions import ResourceExhausted, InternalServerError, ServiceUnavailable
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
+from google.genai.errors import ClientError as GenAIClientError, ServerError as GenAIServerError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception, before_sleep_log
 from typing import Optional, Dict, Any, List
 from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 
@@ -17,6 +18,24 @@ from src.carmina.llm.cloud_providers.base_provider import BaseCloudProvider
 class SafetyBlockError(Exception):
     """Raised when Vertex AI blocks a response due to safety filters."""
     pass
+
+
+def _is_retryable_error(exc: BaseException) -> bool:
+    """Return True for transient errors that should be retried.
+
+    Covers both google-api-core and google-genai exception hierarchies,
+    since the latter raises its own ClientError/ServerError types that do
+    NOT inherit from google.api_core.exceptions.
+    """
+    # google-api-core exceptions (legacy / some SDK paths)
+    if isinstance(exc, (ResourceExhausted, InternalServerError, ServiceUnavailable)):
+        return True
+    # google-genai exceptions (google.genai.Client path)
+    if isinstance(exc, GenAIClientError) and exc.code == 429:
+        return True
+    if isinstance(exc, GenAIServerError):
+        return True
+    return False
 
 
 class VertexAIProvider(BaseCloudProvider):
@@ -110,7 +129,7 @@ class VertexAIProvider(BaseCloudProvider):
         cls._config_loaded = True
     
     @retry(
-        retry=retry_if_exception_type((ResourceExhausted, InternalServerError, ServiceUnavailable)),
+        retry=retry_if_exception(_is_retryable_error),
         stop=stop_after_attempt(6),
         wait=wait_exponential(multiplier=2, min=5, max=60),
         before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),

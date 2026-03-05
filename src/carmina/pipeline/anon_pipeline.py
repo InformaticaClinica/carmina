@@ -231,6 +231,9 @@ class AnonymizationPipeline:
                 except Exception as e:
                     logging.error(f"Error in parallel processing for record {idx}: {e}")
                     results[idx] = {**records[idx], "error": str(e)}
+                    with self.save_lock:
+                        completed_results = [r for r in results if r is not None]
+                        self._save_partial_results(completed_results)
         
         # Safety: replace any remaining None slots with an error record
         for idx, r in enumerate(results):
