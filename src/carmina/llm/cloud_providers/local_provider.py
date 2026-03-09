@@ -113,7 +113,13 @@ class LocalProvider(BaseCloudProvider):
 
             result = response.json()
             if "message" in result and "content" in result["message"]:
-                return result["message"]["content"]
+                message = result["message"]
+                content = message["content"]
+                thinking = message.get("thinking", "")
+                # Re-wrap thinking so downstream adapt_respose can handle it
+                if thinking:
+                    content = f"<think>{thinking}</think>\n{content}"
+                return content
             else:
                 logging.error(f"Unexpected response structure: {result}")
                 return ""

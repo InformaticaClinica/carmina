@@ -99,8 +99,8 @@ class QwenStrategy(BaseLLMStrategy):
                     "think": self.thinking_mode,
                 },
             )
-            # LocalProvider already extracts the message content, so just return it
-            return response
+            # Strip (and optionally display) the <think> block
+            return self.adapt_respose(response)
         else:
             raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")
 
