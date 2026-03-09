@@ -41,6 +41,11 @@ MODEL_CONFIGS = {
         "strategy": "qwen",
         "capabilities": ["identification", "anonymization"]
     },
+    "qwen-3.5-35b": {
+        "context_window": 32768,
+        "strategy": "qwen",
+        "capabilities": ["identification", "anonymization"]
+    },
     "qwen-3.5-122b": {
         "context_window": 131072,
         "strategy": "qwen",

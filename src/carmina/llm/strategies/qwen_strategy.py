@@ -23,6 +23,7 @@ class QwenStrategy(BaseLLMStrategy):
         "qwen2.5-0.5b-instruct": 32768,
         # Qwen 3.5
         "qwen-3.5-27b": 131072,
+        "qwen-3.5-35b": 32768,
         "qwen-3.5-122b": 131072,
     }
 
@@ -46,6 +47,12 @@ class QwenStrategy(BaseLLMStrategy):
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
         self.token_counter = get_token_counter(self.model_name, "qwen")
+        # Thinking mode: use env var first, then kwarg (default=False → instruct)
+        env_think = os.environ.get("QWEN_THINKING_MODE")
+        if env_think is not None:
+            self.thinking_mode = env_think.lower() in ("1", "true", "yes")
+        else:
+            self.thinking_mode = bool(kwargs.get("thinking_mode", False))
 
     def run_inference(self, messages, inference_params):
         """
@@ -89,6 +96,7 @@ class QwenStrategy(BaseLLMStrategy):
                     "top_p": self.top_p,
                     "frequency_penalty": self.frequency_penalty,
                     "presence_penalty": self.presence_penalty,
+                    "think": self.thinking_mode,
                 },
             )
             # LocalProvider already extracts the message content, so just return it
@@ -148,6 +156,10 @@ class QwenStrategy(BaseLLMStrategy):
     def adapt_respose(self, response):
         idx = response.find("</think>")
         if idx != -1:
+            if self.thinking_mode:
+                think_start = response.find("<think>")
+                think_content = response[think_start:idx + 8] if think_start != -1 else response[:idx + 8]
+                print(f"\n[THINKING]\n{think_content}\n[/THINKING]\n")
             # qwen adds a few newlines so we remove them as well
             response = response[idx + 8 :].lstrip()
         return response

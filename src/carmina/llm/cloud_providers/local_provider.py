@@ -35,6 +35,7 @@ class LocalProvider(BaseCloudProvider):
         "qwen-3-4b": "qwen3:4b",
         # Qwen 3.5 models
         "qwen-3.5-27b": "qwen3.5:27b",
+        "qwen-3.5-35b": "qwen3.5:35b",
         "qwen-3.5-122b": "qwen3.5:122b",
         # GLM models
         "glm-4.7-flash": "glm-4.7-flash:q4_K_M",
@@ -98,6 +99,10 @@ class LocalProvider(BaseCloudProvider):
             "top_p": inference_params.get("top_p"),
             "top_k": 0,
         }
+
+        # Support thinking mode for models that allow it (e.g. Qwen3.5)
+        if "think" in inference_params:
+            payload["think"] = inference_params["think"]
 
         try:
             logging.debug(
