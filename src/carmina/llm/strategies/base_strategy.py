@@ -41,7 +41,7 @@ class BaseLLMStrategy(ABC):
             os.environ.get("TEMPERATURE") or kwargs.get("temperature", 1.0)
         )
         self.max_tokens = int(
-            os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500)
+            os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2048)
         )
         self.top_p = float(os.environ.get("TOP_P") or kwargs.get("top_p", 1.0))
         self.frequency_penalty = float(

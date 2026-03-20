@@ -25,18 +25,18 @@ def load_system_prompt(prompt_type: str, anonymization_mode: Optional[str] = Non
         
         # Build the filename based on parameters
         if prompt_name == "anonymize" and anonymization_mode:
-            filename = f"{prompt_name}_{anonymization_mode}.xml"
+            filename = f"{prompt_name}_{anonymization_mode}.txt"
         else:
-            filename = f"{prompt_name}.xml"
+            filename = f"{prompt_name}.txt"
     else:
         # Default behavior: use system directory
         prompts_dir = os.path.join(base_dir, "prompts", "system")
         
         # Build the filename based on parameters
         if prompt_type == "anonymize" and anonymization_mode:
-            filename = f"{prompt_type}_{anonymization_mode}.xml"
+            filename = f"{prompt_type}_{anonymization_mode}.txt"
         else:
-            filename = f"{prompt_type}.xml"
+            filename = f"{prompt_type}.txt"
     
     file_path = os.path.join(prompts_dir, filename)
     

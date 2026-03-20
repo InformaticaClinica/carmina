@@ -6,9 +6,11 @@ anonymization process from raw text to fully anonymized output.
 """
 
 import nltk
+import gc
+import glob
+import json
 import logging
 import os
-import json
 import uuid
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -74,19 +76,17 @@ class AnonymizationPipeline:
         self.results_lock = threading.Lock()   # Guards processed_count (worker threads)
         self.save_lock = threading.Lock()       # Guards incremental file writes (main thread)
         
-        # Setup incremental save path
+        # Setup incremental save path (JSONL — one JSON object per line)
+        # Using JSONL avoids the O(n²) full-rewrite-on-every-doc pattern and
+        # keeps peak RAM per save at a single record instead of the whole list.
         debug_dir = os.getenv("DEBUG_DIR", "data/outputs/debug/")
         os.makedirs(debug_dir, exist_ok=True)
-        self.incremental_save_path = os.path.join(debug_dir, f"output_{llm_strategy.get_name()}_partial.json")
-        
-        # Handle existing partial file from previous run
-        if os.path.exists(self.incremental_save_path):
-            # Rename previous partial as backup
-            from datetime import datetime
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = self.incremental_save_path.replace("_partial.json", f"_partial_backup_{timestamp}.json")
-            os.rename(self.incremental_save_path, backup_path)
-            logging.info(f"Previous partial results backed up to: {backup_path}")
+        self.incremental_save_path = os.path.join(
+            debug_dir, f"output_{llm_strategy.get_name()}_partial.jsonl"
+        )
+
+        # ── Garbage-collect stale partial/backup files from previous runs ──
+        self._cleanup_debug_dir(debug_dir, llm_strategy.get_name())
 
         logging.info(
             f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode"
@@ -140,6 +140,42 @@ class AnonymizationPipeline:
             )
             return None
 
+    # ------------------------------------------------------------------
+    # Disk-garbage cleanup
+    # ------------------------------------------------------------------
+
+    def _cleanup_debug_dir(self, debug_dir: str, model_name: str) -> None:
+        """
+        Remove stale partial / backup files for *model_name* from *debug_dir*.
+
+        Keeps at most ONE previous partial (renamed with a .bak suffix) so
+        there is always a fallback if the current run crashes immediately.
+        All older backups are deleted.
+        """
+        # Delete all previous backups for this model
+        backup_pattern = os.path.join(debug_dir, f"output_{model_name}_partial_backup_*.json")
+        backups = sorted(glob.glob(backup_pattern))
+        # Keep at most 1 backup (the most recent)
+        for old_backup in backups[:-1]:
+            try:
+                os.remove(old_backup)
+                logging.info(f"Cleaned up old partial backup: {old_backup}")
+            except OSError:
+                pass
+
+        # Rotate the current partial JSONL (if it exists) to the single allowed backup
+        if os.path.exists(self.incremental_save_path):
+            backup_path = self.incremental_save_path.replace(".jsonl", ".bak.jsonl")
+            try:
+                if os.path.exists(backup_path):
+                    os.remove(backup_path)
+                os.rename(self.incremental_save_path, backup_path)
+                logging.info(f"Previous partial JSONL rotated to: {backup_path}")
+            except OSError as exc:
+                logging.warning(f"Could not rotate partial file: {exc}")
+
+    # ------------------------------------------------------------------
+
     def run(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Execute the complete anonymization pipeline on a list of records.
@@ -190,9 +226,12 @@ class AnonymizationPipeline:
         for record in records:
             result = self._process_single_record(record, total_to_process)
             results.append(result)
-            # Save partial results after each document
+            # Append single record to the JSONL partial file
             with self.save_lock:
-                self._save_partial_results(results)
+                self._append_partial_result(result)
+            # Explicitly free unreferenced objects so Python's allocator can
+            # give memory back to the OS before the next (potentially large) call.
+            gc.collect()
         return results
     
     def _process_parallel(self, records: List[Dict[str, Any]], total_to_process: int) -> List[Dict[str, Any]]:
@@ -221,19 +260,14 @@ class AnonymizationPipeline:
                 try:
                     result = future.result()
                     results[idx] = result
-
-                    # Save partial results — use dedicated save lock so it doesn't
-                    # block worker threads that only need the count lock
                     with self.save_lock:
-                        completed_results = [r for r in results if r is not None]
-                        self._save_partial_results(completed_results)
+                        self._append_partial_result(result)
 
                 except Exception as e:
                     logging.error(f"Error in parallel processing for record {idx}: {e}")
                     results[idx] = {**records[idx], "error": str(e)}
                     with self.save_lock:
-                        completed_results = [r for r in results if r is not None]
-                        self._save_partial_results(completed_results)
+                        self._append_partial_result(results[idx])
         
         # Safety: replace any remaining None slots with an error record
         for idx, r in enumerate(results):
@@ -316,19 +350,21 @@ class AnonymizationPipeline:
             # Reset task_id so idle threads don't carry stale context
             set_task_id("main")
     
-    def _save_partial_results(self, results: List[Dict[str, Any]]) -> None:
+    def _append_partial_result(self, result: Dict[str, Any]) -> None:
         """
-        Save partial results incrementally after each document.
-        
-        Args:
-            results: Current list of processed results
+        Append a single result as a JSON line to the partial JSONL file.
+
+        Using append-mode (one record per line) instead of rewriting the
+        whole file on every document keeps disk I/O O(1) per document
+        instead of O(n) and avoids the large in-memory JSON serialisation
+        of the entire accumulated list.
         """
         try:
-            with open(self.incremental_save_path, "w", encoding="utf-8") as f:
-                json.dump(results, f, indent=2)
-            logging.debug(f"Partial results saved: {len(results)} documents")
+            with open(self.incremental_save_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(result, ensure_ascii=False) + "\n")
+            logging.debug(f"Partial result appended ({result.get('id', '?')})")
         except Exception as e:
-            logging.error(f"Error saving partial results: {e}")
+            logging.error(f"Error appending partial result: {e}")
 
     def run_chunk_identify(self, chunks):
         """

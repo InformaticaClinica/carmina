@@ -35,7 +35,7 @@ class QwenStrategy(BaseLLMStrategy):
         self.temperature = os.environ.get("TEMPERATURE") or kwargs.get(
             "temperature", 0.7
         )
-        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500)
+        self.max_tokens = int(os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2048))
         self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p", 1.0)
         self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get(
             "frequency_penalty", 0.0
