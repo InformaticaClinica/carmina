@@ -17,6 +17,8 @@ class AnthropicStrategy(BaseLLMStrategy):
         "claude-3.7-sonnet": 220000,
         "claude-4-sonnet": 200000,
         "claude-4-opus": 22000,
+	"claude-sonnet-4-6": 200000,
+	"claude-opus-4-6": 200000,
         "claude-3.5-sonnet-v2": 20000,
         "claude-3.5-haiku": 200000,
         "claude-3-sonnet": 200000,

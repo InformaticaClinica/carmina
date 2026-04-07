@@ -38,6 +38,8 @@ class AWSProvider(BaseCloudProvider):
         "claude-3.5-sonnet": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "claude-3.5-sonnet-v2": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         "claude-4-opus": "us.anthropic.claude-opus-4-20250514-v1:0",  # no funciona
+	"claude-sonnet-4-6": "arn:aws:bedrock:eu-west-1:183150676848:inference-profile/eu.anthropic.claude-sonnet-4-6",
+	"claude-opus-4-6": "arn:aws:bedrock:eu-west-1:183150676848:inference-profile/eu.anthropic.claude-opus-4-6-v1",
         "claude-3-haiku": "us.anthropic.claude-3-haiku-20240307-v1:0",
         "claude-3-sonnet": "us.anthropic.claude-3-sonnet-20240229-v1:0",
         # LLama models

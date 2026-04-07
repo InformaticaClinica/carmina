@@ -213,8 +213,7 @@ class LocalProvider(BaseCloudProvider):
         """
         try:
             logging.debug(
-                f"POST {self.api_endpoint}  model={payload.get('model')}  "
-                f"timeout={self.request_timeout}s"
+                f"sending request to {self.api_endpoint} with payload: {payload}"
             )
             response = requests.post(
                 self.api_endpoint,

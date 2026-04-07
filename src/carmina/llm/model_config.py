@@ -34,6 +34,16 @@ MODEL_CONFIGS = {
         "strategy": "anthropic",
         "capabilities": ["identification", "anonymization"]
     },
+    "claude-sonnet-4-6": {
+        "context_window": 200000,
+        "strategy": "anthropic",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "claude-opus-4-6": {
+        "context_window": 200000,
+        "strategy": "anthropic",
+        "capabilities": ["identification", "anonymization"]
+    },
     
     # Qwen 3.5 models
     "qwen-3.5-27b": {
