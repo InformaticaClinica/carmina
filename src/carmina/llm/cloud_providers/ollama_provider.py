@@ -211,10 +211,19 @@ class OllamaProvider(BaseCloudProvider):
             None — on timeout or connection error (triggers a retry).
         """
         try:
+            params = {
+                k: v for k, v in payload.items()
+                if k not in ("model", "messages", "stream") and v is not None
+            }
             logging.debug(
                 f"OllamaProvider: POST {self.api_endpoint} "
-                f"model={payload.get('model')}"
+                f"model={payload.get('model')} params={params}"
             )
+            for msg in payload.get("messages", []):
+                logging.debug(
+                    f"OllamaProvider: [{msg.get('role', '?').upper()}] "
+                    f"{msg.get('content', '')}"
+                )
             response = requests.post(
                 self.api_endpoint,
                 json=payload,

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List, Dict, Any
 
@@ -41,6 +42,10 @@ class GLMStrategy(BaseLLMStrategy):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
+        # Thinking mode is enabled exclusively by the "-think" suffix in the model name.
+        self.thinking_mode = self.model_name.endswith("-think")
+        if self.thinking_mode:
+            self.model_name = self.model_name.removesuffix("-think")
         self.token_counter = get_token_counter(self.model_name, "glm")
 
     def run_inference(self, messages, inference_params):
@@ -85,12 +90,28 @@ class GLMStrategy(BaseLLMStrategy):
                     "top_p": self.top_p,
                     "frequency_penalty": self.frequency_penalty,
                     "presence_penalty": self.presence_penalty,
+                    "think": self.thinking_mode,
                 },
             )
-            # LocalProvider already extracts the message content, so just return it
-            return response
+            return self._adapt_response(response)
         else:
             raise ValueError(f"Provider {self.provider_name} not supported for GLM.")
+
+    def _adapt_response(self, response: str) -> str:
+        """Strip <think>…</think> blocks from the response, logging them at DEBUG level."""
+        if not response or "<think>" not in response:
+            return response
+        import re
+        think_blocks = re.findall(r"<think>(.*?)</think>", response, re.DOTALL)
+        for block in think_blocks:
+            logging.debug(f"[THINKING]\n<think>{block}</think>\n[/THINKING]")
+        return re.sub(r"<think>.*?</think>\s*", "", response, flags=re.DOTALL).strip()
+
+    def get_name(self) -> str:
+        base = self.model_name
+        if self.thinking_mode:
+            base = f"{base}-think"
+        return base
 
     def identify(self, text, **kwargs):
         message = self.get_message("identify", text)
