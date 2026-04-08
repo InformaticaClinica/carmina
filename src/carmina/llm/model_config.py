@@ -45,6 +45,27 @@ MODEL_CONFIGS = {
         "capabilities": ["identification", "anonymization"]
     },
     
+    # Gemma 4 models
+    "gemma-4-31b": {
+        "context_window": 262144,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "gemma-4-26b": {
+        "context_window": 262144,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "gemma-4-e4b": {
+        "context_window": 131072,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "gemma-4-e2b": {
+        "context_window": 131072,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
     # Qwen 3.5 models
     "qwen-3.5-27b": {
         "context_window": 131072,
