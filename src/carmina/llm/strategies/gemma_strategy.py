@@ -13,8 +13,14 @@ class GemmaStrategy(BaseLLMStrategy):
     """
 
     _context_windows = {
-        "gemma-4-31b": 262144,
-        "gemma-4-26b": 262144,
+        # Gemma 4
+        "gemma-4-31b":  262144,
+        "gemma-4-26b":  262144,
+        # Gemma 3
+        "gemma-3-27b": 131072,
+        "gemma-3-12b": 131072,
+        "gemma-3-4b":  131072,
+        "gemma-3-1b":  32768,
     }
 
     def __init__(self, model_name: str, cloud_provider: BaseCloudProvider, **kwargs):

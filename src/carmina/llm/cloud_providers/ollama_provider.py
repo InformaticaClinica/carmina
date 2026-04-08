@@ -31,35 +31,54 @@ class OllamaProvider(BaseCloudProvider):
     """
 
     # Canonical model name → Ollama model tag
+    # Tags verified against api.ollama.com /api/tags (2026-04-08)
     _model_ids: Dict[str, str] = {
         # ── Qwen 3.5 ──────────────────────────────────────────────────────────
-        "qwen-3.5-27b":  "qwen3.5:27b",
-        "qwen-3.5-35b":  "qwen3.5:35b",
+        "qwen-3.5-397b": "qwen3.5:397b",
         "qwen-3.5-122b": "qwen3.5:122b",
+        "qwen-3.5-35b":  "qwen3.5:35b",
+        "qwen-3.5-27b":  "qwen3.5:27b",
+        # ── Qwen 3-next ───────────────────────────────────────────────────────
+        "qwen-3-next-80b": "qwen3-next:80b",
         # ── Qwen 3 ────────────────────────────────────────────────────────────
-        "qwen-3-1.7b": "qwen3:1.7b",
-        "qwen-3-4b":   "qwen3:4b",
         "qwen-3-32b":  "qwen3:32b",
+        "qwen-3-4b":   "qwen3:4b",
+        "qwen-3-1.7b": "qwen3:1.7b",
         # ── Gemma 4 ───────────────────────────────────────────────────────────
-        "gemma-4-31b": "gemma4:31b",
-        "gemma-4-26b": "gemma4:26b",
+        "gemma-4-31b":  "gemma4:31b",
+        "gemma-4-26b":  "gemma4:26b",
         # ── Gemma 3 ───────────────────────────────────────────────────────────
-        "gemma-3-1b":  "gemma3:1b",
-        "gemma-3-4b":  "gemma3:4b",
         "gemma-3-27b": "gemma3:27b",
+        "gemma-3-12b": "gemma3:12b",
+        "gemma-3-4b":  "gemma3:4b",
+        "gemma-3-1b":  "gemma3:1b",
         # ── GLM ───────────────────────────────────────────────────────────────
-        "glm-5.1":       "glm-5.1:latest",
-        "glm-4.7-flash": "glm-4.7-flash:q4_K_M",
+        "glm-5.1": "glm-5.1",
+        "glm-5":   "glm-5",
+        "glm-4.7": "glm-4.7",
+        "glm-4.6": "glm-4.6",
+        "glm-4":   "glm-4",
         # ── MiniMax ───────────────────────────────────────────────────────────
-        "minimax-m2.7": "minimax-m2.7:latest",
+        "minimax-m2.7": "minimax-m2.7",
+        "minimax-m2.5": "minimax-m2.5",
+        "minimax-m2.1": "minimax-m2.1",
+        "minimax-m2":   "minimax-m2",
+        # ── GPT-OSS ───────────────────────────────────────────────────────────
+        "gpt-oss-20b":  "gpt-oss:20b",
+        "gpt-oss-120b": "gpt-oss:120b",
+        # ── DeepSeek ──────────────────────────────────────────────────────────
+        "deepseek-v3.2":      "deepseek-v3.2",
+        "deepseek-v3.1-671b": "deepseek-v3.1:671b",
+        # ── Kimi ──────────────────────────────────────────────────────────────
+        "kimi-k2-1t":      "kimi-k2:1t",
+        "kimi-k2.5":       "kimi-k2.5",
+        "kimi-k2-thinking": "kimi-k2-thinking",
         # ── Llama ─────────────────────────────────────────────────────────────
         "llama-3.1-8b":  "llama3.1:8b",
         "llama-3.1-70b": "llama3.1:70b",
         "llama-3.3-70b": "llama3.3:70b",
         "llama-4":       "llama4",
         "llama-4-scout": "llama4:scout",
-        # ── Other ─────────────────────────────────────────────────────────────
-        "gpt-oss-120b": "gpt-oss:120b",
     }
 
     DEFAULT_REQUEST_TIMEOUT = 300

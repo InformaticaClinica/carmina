@@ -23,9 +23,16 @@ class QwenStrategy(BaseLLMStrategy):
         "qwen2.5-1.5b-instruct": 32768,
         "qwen2.5-0.5b-instruct": 32768,
         # Qwen 3.5
-        "qwen-3.5-27b": 131072,
-        "qwen-3.5-35b": 32768,
+        "qwen-3.5-397b": 131072,
         "qwen-3.5-122b": 131072,
+        "qwen-3.5-35b":  32768,
+        "qwen-3.5-27b":  131072,
+        # Qwen 3-next
+        "qwen-3-next-80b": 131072,
+        # Qwen 3
+        "qwen-3-32b":  32768,
+        "qwen-3-4b":   32768,
+        "qwen-3-1.7b": 32768,
     }
 
     def __init__(self, model_name, cloud_provider, **kwargs):

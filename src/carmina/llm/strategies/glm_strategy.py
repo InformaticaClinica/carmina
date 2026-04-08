@@ -15,11 +15,11 @@ class GLMStrategy(BaseLLMStrategy):
 
     # Dictionary to map model names to their context windows
     _context_windows = {
-        "glm-5.1":       262144,
-        "glm-4.7-flash": 131072,
-        "glm4.7-flash":  131072,
-        "glm-4-flash":   131072,
-        "glm-4":         131072,
+        "glm-5.1": 262144,
+        "glm-5":   262144,
+        "glm-4.7": 131072,
+        "glm-4.6": 131072,
+        "glm-4":   131072,
     }
 
     def __init__(self, model_name, cloud_provider, **kwargs):
