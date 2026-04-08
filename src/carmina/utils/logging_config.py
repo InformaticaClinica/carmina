@@ -2,7 +2,6 @@
 Centralized logging configuration for the application.
 """
 
-import glob
 import logging
 import os
 import threading
@@ -68,9 +67,6 @@ def setup_logging(config: Optional[Dict[str, Any]] = None):
     # Create directory if needed
     os.makedirs(log_dir, exist_ok=True)
 
-    # ── Garbage-collect old log files: keep the 5 most recent ──────────────
-    _cleanup_old_logs(log_dir, keep=5)
-
     # Set up file with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = f"{log_dir}/carmina_{timestamp}.log"
@@ -95,21 +91,6 @@ def setup_logging(config: Optional[Dict[str, Any]] = None):
 
     # Return the configured logger
     return logger
-
-
-def _cleanup_old_logs(log_dir: str, keep: int = 5) -> None:
-    """
-    Delete all but the *keep* most-recent carmina_*.log files in *log_dir*.
-    This prevents logs/ from growing without bound across long benchmark runs.
-    """
-    pattern = os.path.join(log_dir, "carmina_*.log")
-    log_files = sorted(glob.glob(pattern))  # lexicographic = chronological for YYYYMMDD_HHMMSS names
-    to_delete = log_files[:-keep] if len(log_files) >= keep else []
-    for path in to_delete:
-        try:
-            os.remove(path)
-        except OSError:
-            pass  # already gone or locked — not worth crashing over
 
 
 def get_logger(name: str) -> logging.Logger:

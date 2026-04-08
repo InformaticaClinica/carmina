@@ -13,11 +13,13 @@ from src.carmina.llm.cloud_providers.cloud_provider_factory import CloudProvider
 from src.carmina.llm.strategies.anthropic_strategy import AnthropicStrategy
 from src.carmina.llm.strategies.deepseek_strategy import DeepSeekStrategy
 from src.carmina.llm.strategies.gemini_strategy import GeminiStrategy
+from src.carmina.llm.strategies.gemma_strategy import GemmaStrategy
 from src.carmina.llm.strategies.vertex_gemini_strategy import VertexGeminiStrategy
 from src.carmina.llm.strategies.openai_strategy import OpenAIStrategy
 from src.carmina.llm.strategies.llama_strategy import LlamaStrategy
 from src.carmina.llm.strategies.qwen_strategy import QwenStrategy
 from src.carmina.llm.strategies.glm_strategy import GLMStrategy
+from src.carmina.llm.strategies.minimax_strategy import MinimaxStrategy
 
 # from llm.strategies.huggingface_strategy import HuggingFaceStrategy
 from src.carmina.llm.strategies.mock_strategy import MockLLMStrategy
@@ -37,7 +39,8 @@ class LLMFactory:
         "llama": LlamaStrategy,
         "qwen": QwenStrategy,
         "glm": GLMStrategy,
-        "gemma": GeminiStrategy,
+        "minimax": MinimaxStrategy,
+        "gemma": GemmaStrategy,
         "mock": MockLLMStrategy,
         "mistral": MistralStrategy,
     }
@@ -99,7 +102,7 @@ class LLMFactory:
             True if the model is a Gemini model, False otherwise
         """
         model_name_lower = model_name.lower()
-        return "gemini" in model_name_lower or "gemma" in model_name_lower
+        return "gemini" in model_name_lower
 
     @classmethod
     def _get_strategy_for_model(cls, model_name: str) -> Type[BaseLLMStrategy]:

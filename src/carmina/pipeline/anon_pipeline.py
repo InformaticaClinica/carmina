@@ -7,7 +7,6 @@ anonymization process from raw text to fully anonymized output.
 
 import nltk
 import gc
-import glob
 import json
 import logging
 import os
@@ -86,7 +85,7 @@ class AnonymizationPipeline:
         )
 
         # ── Garbage-collect stale partial/backup files from previous runs ──
-        self._cleanup_debug_dir(debug_dir, llm_strategy.get_name())
+        # (removed — user manages output directory manually)
 
         logging.info(
             f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode"
@@ -139,40 +138,6 @@ class AnonymizationPipeline:
                 "Invalid MAX_DOCUMENTS_TO_PROCESS value in .env, should be a positive integer"
             )
             return None
-
-    # ------------------------------------------------------------------
-    # Disk-garbage cleanup
-    # ------------------------------------------------------------------
-
-    def _cleanup_debug_dir(self, debug_dir: str, model_name: str) -> None:
-        """
-        Remove stale partial / backup files for *model_name* from *debug_dir*.
-
-        Keeps at most ONE previous partial (renamed with a .bak suffix) so
-        there is always a fallback if the current run crashes immediately.
-        All older backups are deleted.
-        """
-        # Delete all previous backups for this model
-        backup_pattern = os.path.join(debug_dir, f"output_{model_name}_partial_backup_*.json")
-        backups = sorted(glob.glob(backup_pattern))
-        # Keep at most 1 backup (the most recent)
-        for old_backup in backups[:-1]:
-            try:
-                os.remove(old_backup)
-                logging.info(f"Cleaned up old partial backup: {old_backup}")
-            except OSError:
-                pass
-
-        # Rotate the current partial JSONL (if it exists) to the single allowed backup
-        if os.path.exists(self.incremental_save_path):
-            backup_path = self.incremental_save_path.replace(".jsonl", ".bak.jsonl")
-            try:
-                if os.path.exists(backup_path):
-                    os.remove(backup_path)
-                os.rename(self.incremental_save_path, backup_path)
-                logging.info(f"Previous partial JSONL rotated to: {backup_path}")
-            except OSError as exc:
-                logging.warning(f"Could not rotate partial file: {exc}")
 
     # ------------------------------------------------------------------
 

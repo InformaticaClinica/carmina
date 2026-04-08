@@ -15,10 +15,11 @@ class GLMStrategy(BaseLLMStrategy):
 
     # Dictionary to map model names to their context windows
     _context_windows = {
+        "glm-5.1":       262144,
         "glm-4.7-flash": 131072,
-        "glm4.7-flash": 131072,
-        "glm-4-flash": 131072,
-        "glm-4": 131072,
+        "glm4.7-flash":  131072,
+        "glm-4-flash":   131072,
+        "glm-4":         131072,
     }
 
     def __init__(self, model_name, cloud_provider, **kwargs):
@@ -70,7 +71,7 @@ class GLMStrategy(BaseLLMStrategy):
             raise NotImplementedError(
                 f"Provider {self.provider_name} not implemented for GLM."
             )
-        elif self.provider_name == "local":
+        elif self.provider_name in ("local", "ollama"):
             if "glm" not in self.model_name.lower():
                 raise ValueError(
                     f"Provider {self.provider_name} not supported for GLM."

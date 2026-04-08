@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List, Dict, Any
 
@@ -46,13 +47,13 @@ class QwenStrategy(BaseLLMStrategy):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
+        # Thinking mode is enabled exclusively by the "-think" suffix in the model name.
+        self.thinking_mode = self.model_name.endswith("-think")
+        # Strip the suffix so it doesn't bleed into file names, context-window
+        # lookups, token counters, or the Ollama model tag.
+        if self.thinking_mode:
+            self.model_name = self.model_name.removesuffix("-think")
         self.token_counter = get_token_counter(self.model_name, "qwen")
-        # Thinking mode: use env var first, then kwarg (default=False → instruct)
-        env_think = os.environ.get("QWEN_THINKING_MODE")
-        if env_think is not None:
-            self.thinking_mode = env_think.lower() in ("1", "true", "yes")
-        else:
-            self.thinking_mode = bool(kwargs.get("thinking_mode", False))
 
     def run_inference(self, messages, inference_params):
         """
@@ -82,7 +83,7 @@ class QwenStrategy(BaseLLMStrategy):
             raise NotImplementedError(
                 f"Provider {self.provider_name} not implemented for Qwen."
             )
-        elif self.provider_name == "local":
+        elif self.provider_name in ("local", "ollama"):
             if "qwen" not in self.model_name.lower():
                 raise ValueError(
                     f"Provider {self.provider_name} not supported for Qwen."
@@ -159,7 +160,10 @@ class QwenStrategy(BaseLLMStrategy):
             if self.thinking_mode:
                 think_start = response.find("<think>")
                 think_content = response[think_start:idx + 8] if think_start != -1 else response[:idx + 8]
-                print(f"\n[THINKING]\n{think_content}\n[/THINKING]\n")
+                logging.debug(f"[THINKING]\n{think_content}\n[/THINKING]")
             # qwen adds a few newlines so we remove them as well
             response = response[idx + 8 :].lstrip()
         return response
+
+    def get_name(self) -> str:
+        return f"{self.model_name}-think" if self.thinking_mode else self.model_name
