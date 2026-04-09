@@ -198,8 +198,6 @@ class OllamaProvider(BaseCloudProvider):
             "top_p": inference_params.get("top_p"),
             "top_k": 0,
         }
-        if "think" in inference_params:
-            payload["think"] = inference_params["think"]
         return payload
 
     def _do_request(self, payload: dict) -> Optional[str]:

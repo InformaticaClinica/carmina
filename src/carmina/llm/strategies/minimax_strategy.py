@@ -33,10 +33,6 @@ class MinimaxStrategy(BaseLLMStrategy):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
-        # Thinking mode is enabled exclusively by the "-think" suffix in the model name.
-        self.thinking_mode = self.model_name.endswith("-think")
-        if self.thinking_mode:
-            self.model_name = self.model_name.removesuffix("-think")
         self.token_counter = get_token_counter(self.model_name, "minimax")
 
     def run_inference(self, messages: List[Dict[str, str]], inference_params: dict) -> str:
@@ -55,7 +51,6 @@ class MinimaxStrategy(BaseLLMStrategy):
                     "top_p": self.top_p,
                     "frequency_penalty": self.frequency_penalty,
                     "presence_penalty": self.presence_penalty,
-                    "think": self.thinking_mode,
                 },
             )
             return self._adapt_response(response)
@@ -72,12 +67,6 @@ class MinimaxStrategy(BaseLLMStrategy):
         for block in think_blocks:
             logging.debug(f"[THINKING]\n<think>{block}</think>\n[/THINKING]")
         return re.sub(r"<think>.*?</think>\s*", "", response, flags=re.DOTALL).strip()
-
-    def get_name(self) -> str:
-        base = self.model_name
-        if self.thinking_mode:
-            base = f"{base}-think"
-        return base
 
     def identify(self, text: str, **kwargs) -> str:
         messages = self.get_message("identify", text)

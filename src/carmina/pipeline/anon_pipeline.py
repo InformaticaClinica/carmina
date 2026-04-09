@@ -85,7 +85,6 @@ class AnonymizationPipeline:
         )
 
         # ── Garbage-collect stale partial/backup files from previous runs ──
-        # (removed — user manages output directory manually)
 
         logging.info(
             f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode"

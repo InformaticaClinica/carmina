@@ -25,12 +25,6 @@ class GemmaStrategy(BaseLLMStrategy):
 
     def __init__(self, model_name: str, cloud_provider: BaseCloudProvider, **kwargs):
         super().__init__(model_name, cloud_provider, **kwargs)
-        # Thinking mode is enabled exclusively by the "-think" suffix in the model name.
-        self.thinking_mode = model_name.endswith("-think")
-        # Strip the suffix so it doesn't bleed into file names, context-window
-        # lookups, token counters, or the Ollama model tag.
-        if self.thinking_mode:
-            self.model_name = self.model_name.removesuffix("-think")
         self.token_counter = get_token_counter(self.model_name, self.provider_name)
 
     def run_inference(self, messages, inference_params):
@@ -49,7 +43,6 @@ class GemmaStrategy(BaseLLMStrategy):
                     "top_p": self.top_p,
                     "frequency_penalty": self.frequency_penalty,
                     "presence_penalty": self.presence_penalty,
-                    "think": self.thinking_mode,
                 },
             )
             return self._adapt_response(response)
@@ -77,19 +70,15 @@ class GemmaStrategy(BaseLLMStrategy):
         return self.run_inference(messages, inference_params)
 
     def _adapt_response(self, response: str) -> str:
-        """Strip <think>…</think> blocks, optionally logging them."""
+        """Strip <think>…</think> blocks, logging them at DEBUG level."""
         idx = response.find("</think>")
         if idx != -1:
-            if self.thinking_mode:
-                think_start = response.find("<think>")
-                think_content = (
-                    response[think_start : idx + 8]
-                    if think_start != -1
-                    else response[: idx + 8]
-                )
-                logging.debug(f"[THINKING]\n{think_content}\n[/THINKING]")
+            think_start = response.find("<think>")
+            think_content = (
+                response[think_start : idx + 8]
+                if think_start != -1
+                else response[: idx + 8]
+            )
+            logging.debug(f"[THINKING]\n{think_content}\n[/THINKING]")
             response = response[idx + 8 :].lstrip()
         return response
-
-    def get_name(self) -> str:
-        return f"{self.model_name}-think" if self.thinking_mode else self.model_name
