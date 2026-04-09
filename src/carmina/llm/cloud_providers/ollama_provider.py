@@ -8,6 +8,7 @@ local-process-restart logic.
 """
 
 import os
+import json
 import logging
 import requests
 from typing import List, Dict, Optional
@@ -192,7 +193,7 @@ class OllamaProvider(BaseCloudProvider):
         payload = {
             "model": ollama_model,
             "messages": messages,
-            "stream": False,
+            "stream": True,
             "temperature": inference_params.get("temperature"),
             "num_predict": inference_params.get("max_tokens"),
             "top_p": inference_params.get("top_p"),
@@ -202,10 +203,13 @@ class OllamaProvider(BaseCloudProvider):
 
     def _do_request(self, payload: dict) -> Optional[str]:
         """
-        Execute a single POST to /api/chat.
+        Execute a single streaming POST to /api/chat.
+
+        Uses stream=True so Cloudflare sees continuous data and does not
+        apply its 524 gateway timeout, which fires after ~120 s of silence.
 
         Returns:
-            str  — response content on success (may be "").
+            str  — accumulated response content on success (may be "").
             None — on timeout or connection error (triggers a retry).
         """
         try:
@@ -227,22 +231,28 @@ class OllamaProvider(BaseCloudProvider):
                 json=payload,
                 headers=self._headers,
                 timeout=self.request_timeout,
+                stream=True,
             )
             response.raise_for_status()
 
-            result = response.json()
-            if "message" in result and "content" in result["message"]:
-                message = result["message"]
-                content = message["content"]
-                thinking = message.get("thinking", "")
-                if thinking:
-                    content = f"<think>{thinking}</think>\n{content}"
-                return content
+            content = ""
+            thinking = ""
+            for raw_line in response.iter_lines():
+                if not raw_line:
+                    continue
+                try:
+                    chunk = json.loads(raw_line)
+                except Exception:
+                    continue
+                msg = chunk.get("message", {})
+                thinking += msg.get("thinking") or ""
+                content  += msg.get("content")  or ""
+                if chunk.get("done"):
+                    break
 
-            logging.error(
-                f"OllamaProvider: unexpected response structure: {result}"
-            )
-            return ""
+            if thinking:
+                content = f"<think>{thinking}</think>\n{content}"
+            return content
 
         except requests.exceptions.Timeout:
             logging.error(
