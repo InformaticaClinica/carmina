@@ -8,6 +8,7 @@ from src.carmina.llm.factory import LLMFactory
 from src.carmina.metrics.recorder import MetricsRecorder
 from src.carmina.metrics.timer import measure_time
 from src.carmina.metrics.compare_line import extract_all_metrics
+from src.carmina.utils.file_utils import backup_if_exists
 
 # Load environment variables
 dotenv.load_dotenv()
@@ -112,6 +113,7 @@ class ModelExecutor:
         # ── ALWAYS save the final JSON first, before any further processing ──
         debug_path = os.path.join(self.debug_dir, f"output_{self.model_name}.json")
         try:
+            backup_if_exists(debug_path)
             with open(debug_path, "w", encoding="utf-8") as f:
                 json.dump(anonymized_records, f, indent=2)
             print(f"✅ Anonymization completed. Results saved to {debug_path}")

@@ -24,6 +24,7 @@ from typing import Dict, List, Any, Optional
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
 from src.carmina.utils.logging_config import set_task_id
+from src.carmina.utils.file_utils import backup_if_exists
 from src.carmina.pipeline.processors.identification_processor import (
     IdentificationProcessor,
 )
@@ -83,6 +84,7 @@ class AnonymizationPipeline:
         self.incremental_save_path = os.path.join(
             debug_dir, f"output_{llm_strategy.get_name()}_partial.jsonl"
         )
+        backup_if_exists(self.incremental_save_path)
 
         # ── Garbage-collect stale partial/backup files from previous runs ──
 
