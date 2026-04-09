@@ -14,7 +14,7 @@ def extract_labels(masked_text: str) -> List[Dict[str, Any]]:
     labels = []
     pattern = r'\[\*\*(.*?)\*\*\]'
     
-    for match in re.finditer(pattern, masked_text):
+    for match in re.finditer(pattern, masked_text, re.DOTALL):
         entity = match.group(1)
         # Format like [**PHI_TYPE**]
         value = entity.strip()

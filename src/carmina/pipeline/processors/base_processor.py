@@ -63,4 +63,4 @@ class BaseProcessor(ABC):
         """
         # Expresión regular para capturar texto entre [**...**]
         pattern = r'\[\*\*(.*?)\*\*\]'
-        return re.findall(pattern, text)
+        return re.findall(pattern, text, re.DOTALL)
