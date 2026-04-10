@@ -163,33 +163,36 @@ class VertexAIProvider(BaseCloudProvider):
         
         # Adapt the messages to the required format
         payload = self.adapt_message(messages, **kwargs)
-
-        # Use streaming to avoid read timeouts on long responses
-        full_text = ""
-        last_candidates = None
-        for chunk in self._client.models.generate_content_stream(
+        response = self._client.models.generate_content(
             model=model_name,
             contents=payload["contents"],
-            config=payload["config"],
-        ):
-            if hasattr(chunk, 'text') and chunk.text:
-                full_text += chunk.text
-            if hasattr(chunk, 'candidates') and chunk.candidates:
-                last_candidates = chunk.candidates
-
-        # Check for safety blocks on the final chunk
-        if last_candidates:
-            candidate = last_candidates[0]
+            config=payload["config"]
+        )
+        
+        # Check for safety blocks
+        if hasattr(response, 'candidates') and response.candidates:
+            candidate = response.candidates[0]
             if hasattr(candidate, 'finish_reason'):
                 finish_reason = str(candidate.finish_reason)
                 if 'SAFETY' in finish_reason:
                     logging.warning(f"Response blocked by safety filters: {finish_reason}")
                     raise SafetyBlockError(f"Response blocked by safety filters: {finish_reason}")
-
-        if not full_text:
-            raise ValueError("Response does not contain text content")
-
-        return full_text
+        
+        # Extract text from response
+        if not hasattr(response, 'text') or response.text is None:
+            # Try to extract from candidates if .text is not available
+            if hasattr(response, 'candidates') and response.candidates:
+                try:
+                    text = response.candidates[0].content.parts[0].text
+                    logging.info("Extracted text from response.candidates")
+                    return text
+                except (AttributeError, IndexError) as e:
+                    logging.error(f"Failed to extract text from response: {e}")
+                    raise ValueError("Response does not contain text content") from e
+            else:
+                raise ValueError("Response does not contain text content")
+        
+        return response.text
     
     def get_name(self) -> str:
         """

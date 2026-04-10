@@ -231,17 +231,15 @@ class AWSProvider(BaseCloudProvider):
                 # Handle different types of errors
                 if isinstance(e, ClientError):
                     error_code = e.response.get("Error", {}).get("Code", "")
-                    if (
-                        error_code == "ThrottlingException"
-                        and attempt < self.max_retries
-                    ):
+                    retryable_codes = {"ThrottlingException", "ServiceUnavailableException"}
+                    if error_code in retryable_codes and attempt < self.max_retries:
                         logging.warning(
-                            f"ThrottlingException on attempt {attempt + 1}/{self.max_retries + 1}. "
+                            f"{error_code} on attempt {attempt + 1}/{self.max_retries + 1}. "
                             f"Will retry..."
                         )
                         continue
                     else:
-                        # Re-raise non-throttling ClientErrors or if max retries exceeded
+                        # Re-raise non-retryable ClientErrors or if max retries exceeded
                         if attempt == self.max_retries:
                             logging.error(
                                 f"Max retries exceeded for ClientError: {error_code}"
@@ -387,33 +385,14 @@ class AWSProvider(BaseCloudProvider):
             )
 
             # Make the actual API call with retry logic
-            if "anthropic" in model_id:
-                # Use streaming for Claude models to avoid read timeouts on long responses
-                def _invoke_model():
-                    return self.bedrock_runtime.invoke_model_with_response_stream(
-                        modelId=model_id, body=json.dumps(request_body)
-                    )
+            def _invoke_model():
+                return self.bedrock_runtime.invoke_model(
+                    modelId=model_id, body=json.dumps(request_body)
+                )
 
-                response = self._retry_with_backoff(_invoke_model)
-                full_text = ""
-                for event in response.get("body"):
-                    chunk = event.get("chunk")
-                    if chunk:
-                        chunk_data = json.loads(chunk.get("bytes").decode())
-                        if chunk_data.get("type") == "content_block_delta":
-                            delta = chunk_data.get("delta", {})
-                            if delta.get("type") == "text_delta":
-                                full_text += delta.get("text", "")
-                return {"content": [{"text": full_text}]}
-            else:
-                def _invoke_model():
-                    return self.bedrock_runtime.invoke_model(
-                        modelId=model_id, body=json.dumps(request_body)
-                    )
-
-                response = self._retry_with_backoff(_invoke_model)
-                response_body = json.loads(response.get("body").read())
-                return response_body
+            response = self._retry_with_backoff(_invoke_model)
+            response_body = json.loads(response.get("body").read())
+            return response_body
 
         except (ClientError, ReadTimeoutError, Urllib3ReadTimeoutError) as e:
             if isinstance(e, ClientError):
