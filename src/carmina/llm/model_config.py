@@ -12,7 +12,7 @@ MODEL_CONFIGS = {
         "strategy": "openai",
         "capabilities": ["identification", "anonymization"]
     },
-
+    
     # Anthropic models
     "claude-3-sonnet": {
         "context_window": 180000,
@@ -22,7 +22,7 @@ MODEL_CONFIGS = {
     "claude-3-haiku": {
         "context_window": 150000,
         "strategy": "anthropic",
-        "capabilities": ["identification", "anonymization"]
+        "capabilities": ["identification", "anonymization"]  
     },
     "claude-3.5-sonnet": {
         "context_window": 200000,
@@ -34,14 +34,54 @@ MODEL_CONFIGS = {
         "strategy": "anthropic",
         "capabilities": ["identification", "anonymization"]
     },
-
-    # Ollama models
-    "gemma3:1b": {
-        "context_window": 8192,
-        "strategy": "gemini",
+    "claude-sonnet-4-6": {
+        "context_window": 200000,
+        "strategy": "anthropic",
         "capabilities": ["identification", "anonymization"]
     },
-
+    "claude-opus-4-6": {
+        "context_window": 200000,
+        "strategy": "anthropic",
+        "capabilities": ["identification", "anonymization"]
+    },
+    
+    # Gemma 4 models
+    "gemma-4-31b": {
+        "context_window": 262144,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "gemma-4-26b": {
+        "context_window": 262144,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "gemma-4-e4b": {
+        "context_window": 131072,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "gemma-4-e2b": {
+        "context_window": 131072,
+        "strategy": "gemma",
+        "capabilities": ["identification", "anonymization"]
+    },
+    # Qwen 3.5 models
+    "qwen-3.5-27b": {
+        "context_window": 131072,
+        "strategy": "qwen",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "qwen-3.5-35b": {
+        "context_window": 32768,
+        "strategy": "qwen",
+        "capabilities": ["identification", "anonymization"]
+    },
+    "qwen-3.5-122b": {
+        "context_window": 131072,
+        "strategy": "qwen",
+        "capabilities": ["identification", "anonymization"]
+    },
     # HuggingFace models
     "llama-3-8b": {
         "context_window": 8192,

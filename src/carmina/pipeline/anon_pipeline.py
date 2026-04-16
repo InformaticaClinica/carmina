@@ -5,46 +5,58 @@ This module defines the main pipeline that orchestrates the entire
 anonymization process from raw text to fully anonymized output.
 """
 
+import nltk
+import gc
+import json
 import logging
+import os
+import uuid
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 logger = logging.getLogger(__name__)
 
-import nltk
-nltk.download('punkt_tab')
+
+nltk.download("punkt_tab")
+
 from nltk.tokenize import sent_tokenize
-
-
-import os
 from typing import Dict, List, Any, Optional
 from src.carmina.llm.strategies.base_strategy import BaseLLMStrategy
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
-from src.carmina.pipeline.processors.identification_processor import IdentificationProcessor
+from src.carmina.utils.logging_config import set_task_id
+from src.carmina.utils.file_utils import backup_if_exists
+from src.carmina.pipeline.processors.identification_processor import (
+    IdentificationProcessor,
+)
 from src.carmina.pipeline.processors.labeling_processor import LabelingProcessor
 from src.carmina.pipeline.processors.substitution_processor import SubstitutionProcessor
 
-MAX_CHUNK_SIZE = int(os.getenv("MAX_CHUNK_SIZE"))
+MAX_CHUNK_SIZE = 100
+CHUNK_BOOL = False
+
 
 class AnonymizationPipeline:
     """
     Main pipeline for text anonymization processes.
-    
+
     This pipeline orchestrates the complete anonymization flow, including:
     - Entity identification
     - Entity labeling or substitution
     """
-    
+
     def __init__(self, llm_strategy: BaseLLMStrategy):
         """
         Initialize the anonymization pipeline with the specified LLM strategy.
-        
+
         Args:
             llm_strategy: The LLM strategy to use for processing
         """
         self.llm_strategy = llm_strategy
         self.anonymization_mode = llm_strategy.anonymization_mode
-        
+
         # Configure processors based on mode
         self.identification = IdentificationProcessor(llm_strategy)
-        
+
         # Initialize the right processor based on anonymization mode
         if self.anonymization_mode == "identify":
             self.anonymizer = None
@@ -53,37 +65,83 @@ class AnonymizationPipeline:
         elif self.anonymization_mode == "substitute":
             self.anonymizer = SubstitutionProcessor(llm_strategy)
         else:
-            raise ValueError(f"Unsupported anonymization mode: {self.anonymization_mode}")
-        
+            logging.warning(f"Unknown anonymization_mode '{self.anonymization_mode}', anonymizer disabled")
+            self.anonymizer = None
+
         # Configure document processing limit from environment variable
         self.first_document = self._get_first_document()
         self.max_documents = self._get_max_documents_from_env()
+        self.max_workers = self._get_max_workers_from_env()
         self.processed_count = 0
+        self.results_lock = threading.Lock()   # Guards processed_count (worker threads)
+        self.save_lock = threading.Lock()       # Guards incremental file writes (main thread)
         
-        logging.info(f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode")
-        logging.info(f"Maximum documents to process: {self.max_documents if self.max_documents else 'No limit'}")
-    
-    def _get_first_document(self) -> Optional[int]:
-        return int(os.environ.get("FIRST_DOCUMENT_TO_PROCESS"))
+        # Setup incremental save path (JSONL — one JSON object per line)
+        # Using JSONL avoids the O(n²) full-rewrite-on-every-doc pattern and
+        # keeps peak RAM per save at a single record instead of the whole list.
+        debug_dir = os.getenv("DEBUG_DIR", "data/outputs/debug/")
+        os.makedirs(debug_dir, exist_ok=True)
+        self.incremental_save_path = os.path.join(
+            debug_dir, f"output_{llm_strategy.get_name()}_partial.jsonl"
+        )
+        backup_if_exists(self.incremental_save_path)
 
+        # ── Garbage-collect stale partial/backup files from previous runs ──
+
+        logging.info(
+            f"Pipeline initialized with {llm_strategy.get_name()} using {self.anonymization_mode} mode"
+        )
+        logging.info(
+            f"Maximum documents to process: {self.max_documents if self.max_documents else 'No limit'}"
+        )
+        logging.info(f"Parallel workers: {self.max_workers}")
+        logging.info(f"Incremental results will be saved to: {self.incremental_save_path}")
+
+    def _get_first_document(self) -> Optional[int]:
+        return int(os.environ.get("FIRST_DOCUMENT_TO_PROCESS", "0"))
+
+    def _get_max_workers_from_env(self) -> int:
+        """
+        Get the maximum number of parallel workers from environment variables.
+
+        Returns:
+            int: The maximum number of workers (default: 1 for sequential processing)
+        """
+        max_workers_str = os.environ.get("MAX_WORKERS")
+        if not max_workers_str:
+            return 1  # Default: sequential processing
+
+        try:
+            max_workers = int(max_workers_str)
+            return max(1, max_workers)  # Ensure at least 1 worker
+        except ValueError:
+            logging.warning(
+                "Invalid MAX_WORKERS value in .env, should be a positive integer. Using default: 1"
+            )
+            return 1
+    
     def _get_max_documents_from_env(self) -> Optional[int]:
         """
         Get the maximum number of documents to process from environment variables.
-        
+
         Returns:
             Optional[int]: The maximum number of documents to process or None if no limit
         """
         max_docs_str = os.environ.get("MAX_DOCUMENTS_TO_PROCESS")
         if not max_docs_str:
             return None
-            
+
         try:
             max_docs = int(max_docs_str)
             return max_docs if max_docs > 0 else None
         except ValueError:
-            logging.warning("Invalid MAX_DOCUMENTS_TO_PROCESS value in .env, should be a positive integer")
+            logging.warning(
+                "Invalid MAX_DOCUMENTS_TO_PROCESS value in .env, should be a positive integer"
+            )
             return None
-        
+
+    # ------------------------------------------------------------------
+
     def run(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Execute the complete anonymization pipeline on a list of records.
@@ -95,91 +153,214 @@ class AnonymizationPipeline:
         Returns:
             List of processed records with anonymized text and metadata
         """
-        results = []
-        total_to_process = self.max_documents if self.max_documents else len(records) - (self.first_document - 1 if self.first_document else 0)
-        count = 0
-        for record in records:
-            # Check if we've reached the processing limit
-            if self.first_document is not None and (count + 1) < self.first_document:
-                logging.info(f"Skipping record {count + 1} (first document limit not reached)")
-                count += 1
+        # Filter records based on first_document limit
+        records_to_process = []
+        for idx, record in enumerate(records):
+            if self.first_document is not None and (idx + 1) < self.first_document:
+                logging.info(f"Skipping record {idx + 1} (first document limit not reached)")
                 continue
-
-            if self.max_documents is not None and self.processed_count >= self.max_documents:
-                logging.info(f"Reached maximum document limit ({self.max_documents}), stopping processing")
+            if self.max_documents is not None and len(records_to_process) >= self.max_documents:
                 break
-                
-            try:
-                # Step 1: Extract the text content to process
-                text = record.get('text', '')
-                if not text:
-                    logging.warning(f"Empty text found in record, skipping")
-                    results.append({**record, "error": "Empty text"})
-                    continue
-                
-<<<<<<< HEAD
-                # Step 2: Anonimized 
-                chunk_text = self.get_text_chunks(text)
-                processed_chunks = self.run_chunk_identify(chunk_text)
-=======
-                # Step 2: Run identification to find sensitive entities
-                filename = record.get('id', 'unknown')
-                identified_result = self.identify(text, filename=filename)
-
-                # Step 3: Run anonymization (labeling or substitution)
-                anonymized_result = self.anonymize(text=identified_result.get("anonymized_text"), identified_result=identified_result, filename=filename)
-
-                results_aux = {"identified_text": "", "entities_identified": {}, "anonymized_text": "", "entities_anonymized": {}}
-                if identified_result:
-                    results_aux["identified_text"] = identified_result.get("anonymized_text", "")
-                    results_aux["entities_identified"] = identified_result.get("entities", {})
->>>>>>> be27af6e0f4bf603bb0c0358b929126a2dfd8cd4
-                
-                # Step 3: Store
-                filename =  record.get('id', 'unknown')
-                output = {
-                    "namefile": filename,
-                    "chunks": processed_chunks
-                }
-                results.append(output)
-                self.processed_count += 1
-                logging.info(f"{filename} {self.processed_count} / {total_to_process}")
-            except Exception as e:
-                logging.error(f"Error processing record: {e}")
-                results.append({**record, "error": str(e)})
+            records_to_process.append(record)
+        
+        total_to_process = len(records_to_process)
+        logging.info(f"Processing {total_to_process} documents with {self.max_workers} parallel worker(s)")
+        
+        # Process documents in parallel or sequentially
+        if self.max_workers == 1:
+            # Sequential processing (original behavior)
+            results = self._process_sequential(records_to_process, total_to_process)
+        else:
+            # Parallel processing with ThreadPoolExecutor
+            results = self._process_parallel(records_to_process, total_to_process)
         
         logging.info(f"Completed processing {self.processed_count} documents")
         return results
+    
+    def _process_sequential(self, records: List[Dict[str, Any]], total_to_process: int) -> List[Dict[str, Any]]:
+        """
+        Process records sequentially (original behavior).
+        
+        Args:
+            records: List of records to process
+            total_to_process: Total number of documents to process
+            
+        Returns:
+            List of processed records
+        """
+        results = []
+        for record in records:
+            result = self._process_single_record(record, total_to_process)
+            results.append(result)
+            # Append single record to the JSONL partial file
+            with self.save_lock:
+                self._append_partial_result(result)
+            # Explicitly free unreferenced objects so Python's allocator can
+            # give memory back to the OS before the next (potentially large) call.
+            gc.collect()
+        return results
+    
+    def _process_parallel(self, records: List[Dict[str, Any]], total_to_process: int) -> List[Dict[str, Any]]:
+        """
+        Process records in parallel using ThreadPoolExecutor.
+        
+        Args:
+            records: List of records to process
+            total_to_process: Total number of documents to process
+            
+        Returns:
+            List of processed records (order preserved)
+        """
+        results = [None] * len(records)  # Pre-allocate to preserve order
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks with their index
+            future_to_index = {
+                executor.submit(self._process_single_record, record, total_to_process): idx
+                for idx, record in enumerate(records)
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_index):
+                idx = future_to_index[future]
+                try:
+                    result = future.result()
+                    results[idx] = result
+                    with self.save_lock:
+                        self._append_partial_result(result)
 
-<<<<<<< HEAD
+                except Exception as e:
+                    logging.error(f"Error in parallel processing for record {idx}: {e}")
+                    results[idx] = {**records[idx], "error": str(e)}
+                    with self.save_lock:
+                        self._append_partial_result(results[idx])
+        
+        # Safety: replace any remaining None slots with an error record
+        for idx, r in enumerate(results):
+            if r is None:
+                logging.error(f"Result slot {idx} is None after parallel processing — replacing with error record")
+                results[idx] = {**records[idx], "error": "Future did not complete"}
+        
+        return results
+    
+    def _process_single_record(self, record: Dict[str, Any], total_to_process: int) -> Dict[str, Any]:
+        """
+        Process a single record through the anonymization pipeline.
+        
+        Args:
+            record: Record to process
+            total_to_process: Total number of documents being processed
+            
+        Returns:
+            Processed record with anonymization results
+        """
+        # Generate unique ID for this processing task
+        task_id = str(uuid.uuid4())[:8]
+        # Tag this thread so ALL log lines (including 3rd-party) carry the task_id
+        set_task_id(task_id)
+        
+        try:
+            # Step 1: Extract the text content to process
+            text = record.get("text", "")
+            filename = record.get("id", "unknown")
+            
+            if not text:
+                logging.warning(f"Empty text found in record {filename}, skipping")
+                return {**record, "error": "Empty text"}
+            
+            logging.info(f"Processing {filename}")
+            
+            # Step 2: Anonymize
+            if CHUNK_BOOL:
+                chunk_text = self.get_text_chunks(text)
+                processed_chunks = self.run_chunk_identify(chunk_text)
+            else:
+                # TODO: Refactor
+                identified = self.identify(text)
+                processed_chunks = {
+                    "original_text": text,
+                    "identified_text": identified.get("anonymized_text"),
+                    "entities_identified": identified.get("entities"),
+                }
+                if self.anonymization_mode != "identify":
+                    anonymized = self.anonymize(
+                        text=identified.get("anonymized_text")
+                    )
+                    processed_chunks["anonymized_text"] = anonymized.get(
+                        "anonymized_text"
+                    )
+                    processed_chunks["entities_anonymized"] = anonymized.get(
+                        "entities"
+                    )
+            
+            # Step 3: Prepare output
+            output = {
+                **record,  # Preserve original record data (ground truth)
+                "namefile": filename,
+                "chunks": processed_chunks,
+                "processing_task_id": task_id,  # Add unique identifier
+            }
+            
+            # Thread-safe increment of processed count
+            with self.results_lock:
+                self.processed_count += 1
+                current_count = self.processed_count
+            
+            logging.info(f"{filename} completed ({current_count} / {total_to_process})")
+            return output
+            
+        except Exception as e:
+            logging.error(f"Error processing record {record.get('id', 'unknown')}: {e}")
+            return {**record, "error": str(e), "processing_task_id": task_id}
+        finally:
+            # Reset task_id so idle threads don't carry stale context
+            set_task_id("main")
+    
+    def _append_partial_result(self, result: Dict[str, Any]) -> None:
+        """
+        Append a single result as a JSON line to the partial JSONL file.
+
+        Using append-mode (one record per line) instead of rewriting the
+        whole file on every document keeps disk I/O O(1) per document
+        instead of O(n) and avoids the large in-memory JSON serialisation
+        of the entire accumulated list.
+        """
+        try:
+            with open(self.incremental_save_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(result, ensure_ascii=False) + "\n")
+            logging.debug(f"Partial result appended ({result.get('id', '?')})")
+        except Exception as e:
+            logging.error(f"Error appending partial result: {e}")
+
     def run_chunk_identify(self, chunks):
         """
         Proceess chunks identify and anonymized
-        
+
         Args:
             text: The input is a list of chunks
-        
+
         Returns:
             processed_chunks: The output is a list of dictionaries of each chunk
         """
         processed_chunks = []
-        for chunk in chunks:
+        logging.info(f"Number of chunks {len(chunks)}")
+        n_chunks = len(chunks)
+        for i, chunk in enumerate(chunks):
+            logging.info(f"Iteration chunk {i + 1}/{n_chunks}")
             identified = self.identify(chunk)
-            anonymized = self.anonymize(text=identified.get("anonymized_text"), identified_result = identified)
             processed_chunk = {
-                "original_text" : chunk,
-                "identified_text" : identified.get("anonymized_text"),
-                "entities_identified" : identified.get("entities"),
-                "anonymized_text" : anonymized.get("anonymized_text"),
-                "entities_anonymized" : anonymized.get("entities")
+                "original_text": chunk,
+                "identified_text": identified.get("anonymized_text"),
+                "entities_identified": identified.get("entities"),
             }
+            if self.anonymization_mode != "identify":
+                anonymized = self.anonymize(text=identified.get("anonymized_text"))
+                processed_chunk["anonymized_text"] = anonymized.get("anonymized_text")
+                processed_chunk["entities_anonymized"] = anonymized.get("entities")
             processed_chunks.append(processed_chunk)
         return processed_chunks
 
     def identify(self, text: str) -> Dict[str, Any]:
-=======
-    def identify(self, text: str, filename: str = "unknown") -> Dict[str, Any]:
->>>>>>> be27af6e0f4bf603bb0c0358b929126a2dfd8cd4
         """
         Identify sensitive entities in the input text.
 
@@ -190,13 +371,11 @@ class AnonymizationPipeline:
         Returns:
             Dictionary with identified entities and their labels
         """
-        if self.identification is not None:
-            identified_result = self.identification.process(text, filename=filename)
-            return identified_result
-        else:
-            return {}
+        if self.identification is None:
+            raise RuntimeError("IdentificationProcessor is not initialised")
+        return self.identification.process(text)
 
-    def anonymize(self, text: str, identified_result: Dict[str, Any], filename: str = "unknown") -> Dict[str, Any]:
+    def anonymize(self, text: str) -> Dict[str, Any]:
         """
         Anonymize the input text using the configured LLM strategy.
 
@@ -209,16 +388,15 @@ class AnonymizationPipeline:
             Anonymized text
         """
         if self.anonymizer is not None:
-            return self.anonymizer.process(text, filename=filename)
-        else:
-            return identified_result
-    
-    #TODO: Refactor file
+            return self.anonymizer.process(text)
+        return {"anonymized_text": text, "entities": []}
+
+    # TODO: Refactor file
     @staticmethod
     def get_text_chunks(text: str) -> List[str]:
         """Splits text into chunks of a maximum size, respecting sentence boundaries."""
-        sentences = sent_tokenize(text, language='spanish')
-        
+        sentences = sent_tokenize(text, language="spanish")
+
         text_chunks = []
         current_chunk_words = []
         current_word_count = 0
@@ -227,14 +405,17 @@ class AnonymizationPipeline:
             sentence_words = sentence.split()
             sentence_word_count = len(sentence_words)
 
-            if current_word_count + sentence_word_count > MAX_CHUNK_SIZE and current_chunk_words:
+            if (
+                current_word_count + sentence_word_count > MAX_CHUNK_SIZE
+                and current_chunk_words
+            ):
                 text_chunks.append(" ".join(current_chunk_words))
                 current_chunk_words = sentence_words
                 current_word_count = sentence_word_count
             else:
                 current_chunk_words.extend(sentence_words)
                 current_word_count += sentence_word_count
-        
+
         if current_chunk_words:
             text_chunks.append(" ".join(current_chunk_words))
 

@@ -10,7 +10,13 @@
 Carmina is an application designed for clinical text anonymization and performance comparison between different methods and models. It uses large language models (LLMs) to process and analyze text data, focusing on meddocan guidelines for text anonymization according to European regulations.
 
 ## Features
-* Support for multiple LLM providers (OpenAI, Anthropic, Deepseek, Gemini)
+* Support for multiple LLM providers:
+  * **OpenAI** (GPT models)
+  * **Anthropic** (Claude models via AWS Bedrock)
+  * **Google AI Studio** (Gemini Developer API)
+  * **Google Vertex AI** (Gemini on Google Cloud Platform) - [📖 Setup Guide](docs/vertex_ai_setup.md)
+  * **Azure OpenAI** (DeepSeek, GPT models)
+  * **Local** (Ollama - Llama, Gemma, Qwen, Mistral)
 * Configurable data processing pipeline
 * Evaluation of model performance metrics
 * Benchmarking tools to compare different LLMs

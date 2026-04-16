@@ -8,13 +8,14 @@ import logging
 from typing import Dict, Any, List
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
 
+
 class SubstitutionProcessor(BaseProcessor):
     """
     Processor that substitutes sensitive information in text.
-    
+
     This processor replaces sensitive entities with realistic alternatives.
     """
-    
+
     def process(self, text: str, **kwargs) -> Dict[str, Any]:
         """
         Process the text to replace sensitive entities with substitutes.
@@ -26,38 +27,21 @@ class SubstitutionProcessor(BaseProcessor):
         Returns:
             Dictionary containing the anonymized text and metadata
         """
-        filename = kwargs.get("filename", "unknown")
-
         if not self._validate_input(text):
             return {"anonymized_text": "", "error": "Invalid input text"}
-
-        # Extract entities from kwargs if available
-        entities = kwargs.get("entities", {})
-
+        entities = []
         try:
-            # Always chunk text into 100-token chunks
-            chunk_size = 100
-            chunks = self._chunk_text(text, chunk_size)
-            substituted_chunks = []
-
-            for i, chunk in enumerate(chunks, 1):
-                logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
-                substituted_chunk = self.llm_strategy.process_for_anonymization(chunk, "substitute")
-                substituted_chunks.append(substituted_chunk)
-
-            # Unir los resultados
-            result = "".join(substituted_chunks)
-
-            # Extract labels for evaluation
-            # labels = self._extract_substitution_labels(result)
-
+            results = self.llm_strategy.process_for_anonymization(text, "substitute")
+            entities = self._get_brackets_entities(results)
+            logging.debug(f"Identified entities: {entities}")
             return {
-                "anonymized_text": result,
+                "anonymized_text": results,
+                "entities": entities,
             }
 
         except Exception as e:
             logging.error(f"Error in substitution process: {e}")
-            return {"anonymized_text": text, "entities": entities, "error": str(e)}
+            raise
 
     def _chunk_text(self, text: str, chunk_size: int) -> List[str]:
         """
@@ -85,14 +69,16 @@ class SubstitutionProcessor(BaseProcessor):
             chunks.append(" ".join(current_chunk))
 
         return chunks
-            
-    def _extract_substitution_labels(self, substitution_map: Dict[str, str]) -> List[Dict[str, Any]]:
+
+    def _extract_substitution_labels(
+        self, substitution_map: Dict[str, str]
+    ) -> List[Dict[str, Any]]:
         """
         Convert substitution map to label format for evaluation.
-        
+
         Args:
             substitution_map: Map of original values to substituted values
-            
+
         Returns:
             List of labels in standard format for evaluation
         """

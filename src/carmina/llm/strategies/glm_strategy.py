@@ -8,31 +8,19 @@ from src.carmina.llm.utils.prompt_loader import load_system_prompt
 from src.carmina.llm.utils.token_counter import get_token_counter
 
 
-class QwenStrategy(BaseLLMStrategy):
+class GLMStrategy(BaseLLMStrategy):
     """
-    Implementation for Qwen models.
+    Implementation for GLM (General Language Model) models.
+    Supports models like glm-4.7-flash running via Ollama.
     """
 
     # Dictionary to map model names to their context windows
     _context_windows = {
-        "qwen2.5-72b-instruct": 131072,
-        "qwen2.5-32b-instruct": 131072,
-        "qwen2.5-14b-instruct": 131072,
-        "qwen2.5-7b-instruct": 131072,
-        "qwen2.5-3b-instruct": 32768,
-        "qwen2.5-1.5b-instruct": 32768,
-        "qwen2.5-0.5b-instruct": 32768,
-        # Qwen 3.5
-        "qwen-3.5-397b": 131072,
-        "qwen-3.5-122b": 131072,
-        "qwen-3.5-35b":  32768,
-        "qwen-3.5-27b":  131072,
-        # Qwen 3-next
-        "qwen-3-next-80b": 131072,
-        # Qwen 3
-        "qwen-3-32b":  32768,
-        "qwen-3-4b":   32768,
-        "qwen-3-1.7b": 32768,
+        "glm-5.1": 262144,
+        "glm-5":   262144,
+        "glm-4.7": 131072,
+        "glm-4.6": 131072,
+        "glm-4":   131072,
     }
 
     def __init__(self, model_name, cloud_provider, **kwargs):
@@ -43,7 +31,7 @@ class QwenStrategy(BaseLLMStrategy):
         self.temperature = os.environ.get("TEMPERATURE") or kwargs.get(
             "temperature", 0.7
         )
-        self.max_tokens = int(os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2048))
+        self.max_tokens = os.environ.get("MAX_TOKENS") or kwargs.get("max_tokens", 2500)
         self.top_p = os.environ.get("TOP_P") or kwargs.get("top_p", 1.0)
         self.frequency_penalty = os.environ.get("FREQUENCY_PENALTY") or kwargs.get(
             "frequency_penalty", 0.0
@@ -54,7 +42,7 @@ class QwenStrategy(BaseLLMStrategy):
         self.model_name = model_name
         self.cloud_provider = cloud_provider
         self.provider_name = self.cloud_provider.get_name()
-        self.token_counter = get_token_counter(self.model_name, "qwen")
+        self.token_counter = get_token_counter(self.model_name, "glm")
 
     def run_inference(self, messages, inference_params):
         """
@@ -74,20 +62,20 @@ class QwenStrategy(BaseLLMStrategy):
         }
         if self.provider_name == "aws":
             raise NotImplementedError(
-                f"Provider {self.provider_name} not implemented for Qwen."
+                f"Provider {self.provider_name} not implemented for GLM."
             )
         elif self.provider_name == "azure":
             raise NotImplementedError(
-                f"Provider {self.provider_name} not implemented for Qwen."
+                f"Provider {self.provider_name} not implemented for GLM."
             )
         elif self.provider_name == "google_ai_studio":
             raise NotImplementedError(
-                f"Provider {self.provider_name} not implemented for Qwen."
+                f"Provider {self.provider_name} not implemented for GLM."
             )
         elif self.provider_name in ("local", "ollama"):
-            if "qwen" not in self.model_name.lower():
+            if "glm" not in self.model_name.lower():
                 raise ValueError(
-                    f"Provider {self.provider_name} not supported for Qwen."
+                    f"Provider {self.provider_name} not supported for GLM."
                 )
             response = self.cloud_provider.run_inference(
                 model_id=self.model_name,
@@ -100,12 +88,22 @@ class QwenStrategy(BaseLLMStrategy):
                     "presence_penalty": self.presence_penalty,
                 },
             )
-            return self.adapt_respose(response)
+            return self._adapt_response(response)
         else:
-            raise ValueError(f"Provider {self.provider_name} not supported for Gemini.")
+            raise ValueError(f"Provider {self.provider_name} not supported for GLM.")
+
+    def _adapt_response(self, response: str) -> str:
+        """Strip <think>…</think> blocks from the response, logging them at DEBUG level."""
+        if not response or "<think>" not in response:
+            return response
+        import re
+        think_blocks = re.findall(r"<think>(.*?)</think>", response, re.DOTALL)
+        for block in think_blocks:
+            logging.debug(f"[THINKING]\n<think>{block}</think>\n[/THINKING]")
+        return re.sub(r"<think>.*?</think>\s*", "", response, flags=re.DOTALL).strip()
 
     def identify(self, text, **kwargs):
-        message = self.get_message("identify", text)  # preguntar
+        message = self.get_message("identify", text)
         inference_params = self.get_inference_params()
         return self.run_inference(messages=message, inference_params=inference_params)
 
@@ -120,14 +118,18 @@ class QwenStrategy(BaseLLMStrategy):
             Maximum number of tokens the model can process
         """
         # First check model_config.py
-        model_name_lower = self.model_name.lower()
-        if model_name_lower in MODEL_CONFIGS:
-            return MODEL_CONFIGS[model_name_lower]["context_window"]
-        return self._context_windows.get(self.model_name, 4096)
+        try:
+            from src.carmina.llm.model_config import MODEL_CONFIGS
+            model_name_lower = self.model_name.lower()
+            if model_name_lower in MODEL_CONFIGS:
+                return MODEL_CONFIGS[model_name_lower]["context_window"]
+        except ImportError:
+            pass
+        return self._context_windows.get(self.model_name, 131072)
 
     def count_tokens(self, text: str) -> int:
         """
-        Count tokens in the given text using Qwen tokenizer.
+        Count tokens in the given text using GLM tokenizer.
 
         Args:
             text: Text to count tokens for
@@ -152,13 +154,3 @@ class QwenStrategy(BaseLLMStrategy):
         inference_params = self.get_inference_params()
         result = self.run_inference(messages, inference_params)
         return result
-
-    def adapt_respose(self, response):
-        idx = response.find("</think>")
-        if idx != -1:
-            think_start = response.find("<think>")
-            think_content = response[think_start:idx + 8] if think_start != -1 else response[:idx + 8]
-            logging.debug(f"[THINKING]\n{think_content}\n[/THINKING]")
-            # qwen adds a few newlines so we remove them as well
-            response = response[idx + 8 :].lstrip()
-        return response

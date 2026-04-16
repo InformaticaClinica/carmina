@@ -24,8 +24,16 @@ class MockOllamaProvider(BaseCloudProvider):
         # Gemma models
         "gemma-3-1b": "gemma3:1b",
         "gemma-3-4b": "gemma3:4b",
+        # Gemma 4 models
+        "gemma-4-31b": "gemma4:31b",
+        "gemma-4-26b": "gemma4:26b",
+        "gemma-4-e4b": "gemma4:e4b",
+        "gemma-4-e2b": "gemma4:e2b",
         # Qwen models
-        "qwen-3-1.7b": "qwen3:1.7b"
+        "qwen-3-1.7b": "qwen3:1.7b",
+        # GLM models
+        "glm-4.7-flash": "glm-4.7-flash:q4_K_M",
+        "glm4.7-flash": "glm-4.7-flash:q4_K_M",
     }
     
     def __init__(self, name="mock_ollama", **kwargs):

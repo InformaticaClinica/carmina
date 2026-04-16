@@ -8,6 +8,7 @@ from src.carmina.llm.factory import LLMFactory
 from src.carmina.metrics.recorder import MetricsRecorder
 from src.carmina.metrics.timer import measure_time
 from src.carmina.metrics.compare_line import extract_all_metrics
+from src.carmina.utils.file_utils import backup_if_exists
 
 # Load environment variables
 dotenv.load_dotenv()
@@ -66,6 +67,9 @@ class ModelExecutor:
         print(f"\n🚀 Executing with model: {self.model_name} and anonymization_mode: {self.anonymization_mode}")
         records = load_dataset(self.input_path)
 
+        # Ensure debug directory exists before writing to it
+        os.makedirs(self.debug_dir, exist_ok=True)
+
         # Save loaded records to a JSON file for inspection
         debug_path = os.path.join(self.debug_dir, "loaded_records_debug.json")
         with open(debug_path, "w", encoding="utf-8") as f:
@@ -89,11 +93,7 @@ class ModelExecutor:
         execution_time = recorder.get_current_metrics().get("anon_pipeline_time", 0)
 
         # ======== SAVE ONLY NON-EMPTY ANONYMIZED_TEXT =========
-        output_dir = os.getenv("OUTPUT_DIR")
-        if not output_dir:
-            raise ValueError("OUTPUT_DIR not specified in .env file")
-
-        # Ensure the output directory exists
+        output_dir = os.getenv("OUTPUT_DIR", "data/outputs/")
         os.makedirs(output_dir, exist_ok=True)
 
         # Save only the 'anonymized_text' field for each record if not empty
@@ -110,40 +110,64 @@ class ModelExecutor:
         #print(f"✅ {saved_count} anonymized_text files saved to {output_dir} (non-empty only)")
         # ======== END SAVE ONLY NON-EMPTY ANONYMIZED_TEXT =========
 
+        # ── ALWAYS save the final JSON first, before any further processing ──
         debug_path = os.path.join(self.debug_dir, f"output_{self.model_name}.json")
-        with open(debug_path, "w", encoding="utf-8") as f:
-            json.dump(anonymized_records, f, indent=2)
+        try:
+            backup_if_exists(debug_path)
+            with open(debug_path, "w", encoding="utf-8") as f:
+                json.dump(anonymized_records, f, indent=2)
+            print(f"✅ Anonymization completed. Results saved to {debug_path}")
+        except Exception as e:
+            logging.error(f"Failed to save final output JSON: {e}")
 
-        print(f"✅ Anonymization completed. Results saved ")
-        
-        ground_truth_identity_texts = [entity.get("identify", None) for entity in anonymized_records]
-        if None in ground_truth_identity_texts:
-            logging.warning("Some records are missing the 'identify' key.")
-        prediction_identity_texts = [entity["identified_text"] for entity in anonymized_records]
-        ground_truth_texts = [entity["masked_text"] for entity in anonymized_records]
-        prediction_texts = [entity["anonymized_text"] for entity in anonymized_records]
-        filenames = [entity["id"] for entity in anonymized_records]
-        languages = [self.get_language(entity["id"]) for entity in anonymized_records] #TODO: improve software design
+        # ── Metrics computation (wrapped so a crash here never loses the JSON) ──
+        try:
+            ground_truth_identity_texts = [entity.get("identify", None) for entity in anonymized_records]
+            if None in ground_truth_identity_texts:
+                logging.warning("Some records are missing the 'identify' key.")
+                
+            # Reconstruct texts from chunks if present, otherwise use direct value (backward compatibility)
+            prediction_identity_texts = []
+            prediction_texts = []
+            
+            for entity in anonymized_records:
+                chunks = entity.get("chunks")
+                # chunks may be a list of dicts, a string repr, or absent
+                if isinstance(chunks, list) and chunks and isinstance(chunks[0], dict):
+                    pred_ident = " ".join([c.get("identified_text", "") for c in chunks])
+                    pred_anon = " ".join([c.get("anonymized_text", "") for c in chunks])
+                    prediction_identity_texts.append(pred_ident)
+                    prediction_texts.append(pred_anon)
+                else:
+                    # Fallback: chunks absent, a string, or non-dict list
+                    prediction_identity_texts.append(entity.get("identify", entity.get("identified_text", "")))
+                    prediction_texts.append(entity.get("masked_text", entity.get("anonymized_text", "")))
 
-        
-        recorder.record_all(
-            extract_all_metrics(
-                ground_truth_identity_texts=ground_truth_identity_texts,
-                prediction_identity_texts=prediction_identity_texts,
-                ground_truth_texts=ground_truth_texts,
-                prediction_texts=prediction_texts,
-                filenames=filenames,
-                languages=languages,
+            ground_truth_texts = [entity.get("masked_text", "") for entity in anonymized_records]
+            filenames = [entity.get("id", "unknown") for entity in anonymized_records]
+            languages = [self.get_language(entity.get("id", "")) for entity in anonymized_records] #TODO: improve software design
+
+            recorder.record_all(
+                extract_all_metrics(
+                    ground_truth_identity_texts=ground_truth_identity_texts,
+                    prediction_identity_texts=prediction_identity_texts,
+                    ground_truth_texts=ground_truth_texts,
+                    prediction_texts=prediction_texts,
+                    filenames=filenames,
+                    languages=languages,
+                )
             )
-        )
 
-        # Add execution time to the results
-        recorder.current_metrics["execution_time"] = execution_time
+            # Add execution time to the results
+            recorder.current_metrics["execution_time"] = execution_time
 
-        metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
-        recorder.export_to_json(metrics_path)
+            metrics_path = os.path.join(self.metrics_dir, f"results_{self.model_name}.json")
+            recorder.export_to_json(metrics_path)
 
-        print(f"✅ Model {self.model_name} completed. Results in {self.output_dir} and {metrics_path}")
+            print(f"✅ Model {self.model_name} completed. Results in {self.output_dir} and {metrics_path}")
+
+        except Exception as e:
+            logging.error(f"Metrics computation failed (output JSON was already saved): {e}", exc_info=True)
 
         # Retrieve output directory from .env
         

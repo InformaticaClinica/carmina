@@ -8,53 +8,40 @@ import logging
 from typing import Dict, Any, List
 from src.carmina.pipeline.processors.base_processor import BaseProcessor
 
+
 class LabelingProcessor(BaseProcessor):
     """
     Processor that labels sensitive information in text.
-    
+
     This processor replaces sensitive entities with standardized labels.
     """
-    
+
     def process(self, text: str, **kwargs) -> Dict[str, Any]:
         """
-        Process the text to replace sensitive entities with labels.
+        Process the text to replace sensitive entities with substitutes.
 
         Args:
             text: The input text to anonymize
             **kwargs: Additional parameters including pre-identified entities and 'filename' for logging
 
         Returns:
-            Dictionary containing the labeled text and metadata
+            Dictionary containing the anonymized text and metadata
         """
-        filename = kwargs.get("filename", "unknown")
-
         if not self._validate_input(text):
             return {"anonymized_text": "", "error": "Invalid input text"}
-
+        entities = []
         try:
-            # Always chunk text into 100-token chunks
-            chunk_size = 100
-            chunks = self._chunk_text(text, chunk_size)
-            labeled_chunks = []
-
-            for i, chunk in enumerate(chunks, 1):
-                logging.info(f"Processing chunk {i}/{len(chunks)} for file {filename}")
-                labeled_chunk = self.llm_strategy.process_for_anonymization(chunk, "label")
-                labeled_chunks.append(labeled_chunk)
-
-            # Unir los resultados
-            result = "".join(labeled_chunks)
-
-            # Extract labels for evaluation
-            labels = self._get_brackets_entities(result)
-
+            results = self.llm_strategy.process_for_anonymization(text, "labeling")
+            entities = self._get_brackets_entities(results)
+            logging.debug(f"Identified entities: {entities}")
             return {
-                "anonymized_text": result,
-                "labels": labels
+                "anonymized_text": results,
+                "entities": entities,
             }
 
         except Exception as e:
-            logging.error(f"Error in labeling process: {e}")
+            logging.error(f"Error in substitution process: {e}")
+            raise
 
     def _chunk_text(self, text: str, chunk_size: int) -> List[str]:
         """
@@ -82,14 +69,14 @@ class LabelingProcessor(BaseProcessor):
             chunks.append(" ".join(current_chunk))
 
         return chunks
-            
+
     def _extract_labels(self, text: str) -> List[Dict[str, Any]]:
         """
         Extract labels from the anonymized text.
-        
+
         Args:
             text: Anonymized text with labels
-            
+
         Returns:
             List of labels with their positions and types
         """
@@ -98,5 +85,3 @@ class LabelingProcessor(BaseProcessor):
         labels = []
         # Logic to extract and return labels from text
         return labels
-    
-    

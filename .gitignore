@@ -46,3 +46,7 @@ logs/
 # Local configuration
 *.local.py
 local_settings.py
+
+# Google Cloud service account keys
+secrets/
+*.json

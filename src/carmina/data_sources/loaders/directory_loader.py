@@ -113,11 +113,20 @@ def _load_all_formats(txt_raw_path: str, txt_masked_path: str, txt_identify_path
     for filename in sorted(os.listdir(txt_raw_path)):
         if not filename.endswith('.txt'):
             continue
-            
+
         raw_path = os.path.join(txt_raw_path, filename)
         masked_path = os.path.join(txt_masked_path, filename)
         identify_path = os.path.join(txt_identify_path, filename)
-        
+
+        # Skip records where masked or identify counterpart is missing
+        if not os.path.exists(masked_path):
+            import logging
+            logging.warning(f"Skipping {filename}: no matching file in masked/")
+            continue
+        if not os.path.exists(identify_path):
+            import logging
+            logging.warning(f"Skipping {filename}: no matching file in identify/")
+            continue
         with open(raw_path, 'r', encoding='utf-8') as f_raw:
             original_text = f_raw.read()
             

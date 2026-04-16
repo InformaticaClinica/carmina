@@ -25,7 +25,7 @@ def extract_labels_from_masked_text(masked_text: str) -> List[str]:
     if not masked_text or not masked_text.strip():
         return []
     
-    raw_labels = re.findall(r'\[\*\*(.*?)\*\*\]', masked_text)
+    raw_labels = re.findall(r'\[\*\*(.*?)\*\*\]', masked_text, re.DOTALL)
     
     # Clean the extracted labels to remove empty strings and periods
     cleaned_labels = []
