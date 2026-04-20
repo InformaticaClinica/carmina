@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-04-20
+
+### Changed
+- Added support for additional model strategies and providers, including remote Ollama API and expanded model routing.
+- Expanded prompt definitions and anonymization workflow behavior for identify/label/substitute modes.
+- Improved pipeline resilience with retry/cleanup safeguards and output backup behavior.
+
+### Removed
+- Removed `AGENTS.md` from the repository root to keep release branches focused on distributable project assets.
+- Removed `test_vertex_quick.py` (ad-hoc manual script) from release code paths.
+
 ## [1.0.0] - 2025-05-20
 
 ### Added

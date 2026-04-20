@@ -1,11 +1,11 @@
 # Carmina
 
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![GitHub last commit](https://img.shields.io/github/last-commit/InformaticaClinica/anonimization-benchmark)](https://github.com/InformaticaClinica/anonimization-benchmark/commits/main)
-[![GitHub issues](https://img.shields.io/github/issues/InformaticaClinica/anonimization-benchmark)](https://github.com/InformaticaClinica/anonimization-benchmark/issues)
-[![GitHub forks](https://img.shields.io/github/forks/InformaticaClinica/anonimization-benchmark)](https://github.com/InformaticaClinica/anonimization-benchmark/network)
-[![GitHub stars](https://img.shields.io/github/stars/InformaticaClinica/anonimization-benchmark)](https://github.com/InformaticaClinica/anonimization-benchmark/stargazers)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/InformaticaClinica/anonimization-benchmark/actions)
+[![GitHub last commit](https://img.shields.io/github/last-commit/InformaticaClinica/carmina)](https://github.com/InformaticaClinica/carmina/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/InformaticaClinica/carmina)](https://github.com/InformaticaClinica/carmina/issues)
+[![GitHub forks](https://img.shields.io/github/forks/InformaticaClinica/carmina)](https://github.com/InformaticaClinica/carmina/network)
+[![GitHub stars](https://img.shields.io/github/stars/InformaticaClinica/carmina)](https://github.com/InformaticaClinica/carmina/stargazers)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/InformaticaClinica/carmina/actions)
 <!-- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) -->
 Carmina is an application designed for clinical text anonymization and performance comparison between different methods and models. It uses large language models (LLMs) to process and analyze text data, focusing on meddocan guidelines for text anonymization according to European regulations.
 
@@ -36,7 +36,7 @@ The recommended way to install and run Carmina is through Docker Compose.
 ### Option 1: Using Docker Compose (Recommended)
 1. Clone the repository:
     ```bash
-    git clone https://github.com/InformaticaClinica/anonimization-benchmark
+    git clone https://github.com/InformaticaClinica/carmina
     cd hc-carmina
     ```
 2. Copy the example environment variables file:
@@ -61,7 +61,7 @@ The recommended way to install and run Carmina is through Docker Compose.
 ### Option 2: Using Python Virtual Environment
 1. Clone the repository:
     ```bash
-    git clone https://github.com/InformaticaClinica/anonimization-benchmark
+    git clone https://github.com/InformaticaClinica/carmina
     cd hc-carmina
     ```
 2. Copy the example environment variables file:
@@ -157,6 +157,12 @@ hc-carmina/
 ```
 
 ## Changelog Summary
+
+### Version [1.1.0] - 2026-04-20
+* Support for additional model/provider strategies (including remote Ollama API integration).
+* Expanded prompt and anonymization behavior for identify/label/substitute flows.
+* Pipeline robustness improvements (retry/cleanup and output backup handling).
+* Repository cleanup for release branches (removed `AGENTS.md` and `test_vertex_quick.py`).
 
 ### Version [1.0.0] - 2025-05-20
 * Initial project setup with `main.py` entry point.
