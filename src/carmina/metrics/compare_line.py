@@ -1,6 +1,7 @@
 import re
 import json
 from src.carmina.metrics.evaluator import calculate_metrics, get_all_metrics, calculate_average_metrics
+from src.carmina.metrics.modern_evaluation import evaluate_legacy_arrays
 
 def split_clinical_document(content):
     """
@@ -233,25 +234,25 @@ def extract_all_metrics(ground_truth_identity_texts,
     Returns:
         dict: A dictionary containing all metrics.
     """
-    data = {"metrics": {}}
-    result = []
-    for gt_identify, pred_identify, gt_text, pred_text, filename, language in zip(
-            ground_truth_identity_texts, 
-            prediction_identity_texts, 
-            ground_truth_texts, 
-            prediction_texts,
-            filenames,
-            languages): 
-        
-        # Call the function to extract tags
-        extracted_data = {"id": filename, "language": language, "identify": {}, "label": {}}
-        extracted_data["identify"]= extract_tags_from_files(gt_identify, pred_identify)
-        extracted_data["label"] = extract_tags_from_files(gt_text, pred_text)
-        result.append(extracted_data)
-    data["files"] = result
-    data["metrics"]["identify"] = calculate_average_metrics(result, "identify")
-    data["metrics"]["label"] = calculate_average_metrics(result, "label")
-    return data
+    modern = evaluate_legacy_arrays(
+        ground_truth_identity_texts=ground_truth_identity_texts,
+        prediction_identity_texts=prediction_identity_texts,
+        ground_truth_texts=ground_truth_texts,
+        prediction_texts=prediction_texts,
+        filenames=filenames,
+        languages=languages,
+    )
+
+    # Keep the existing top-level contract while exposing modern M1/M2/M3 results.
+    return {
+        "metrics": {
+            "identify": modern["global"]["m1"],
+            "categorization": modern["global"]["m2"],
+            "label": modern["global"]["m3"],
+        },
+        "by_language": modern["by_language"],
+        "files": modern["document_results"],
+    }
 
 
 # Example usage:
