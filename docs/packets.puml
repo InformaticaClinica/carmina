@@ -1,0 +1,26 @@
+@startuml
+package "src.carmina" {
+  class BenchmarkRunner
+  class ModelExecutor
+  class BenchmarkSummary
+  class Config
+  ' ... otras clases en carmina ...
+}
+
+package "utils" {
+  class logging_config
+  ' ... otras utilidades ...
+}
+
+package "main" {
+  object main.py
+}
+
+main --> src.carmina : uses
+main --> utils : uses
+src.carmina --> utils : uses
+
+' Dependencias implícitas (ej. lectura de .env, os) no suelen mostrarse aquí
+' pero podrías añadir paquetes externos si es relevante.
+
+@enduml

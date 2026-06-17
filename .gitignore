@@ -1,5 +1,11 @@
 # Data directory
-data/
+# Keep the expected folder skeleton in Git, but never commit datasets,
+# generated outputs, logs, metrics, or local corpus files.
+data/*
+data/**/*
+!data/**/
+!data/**/.gitkeep
+!data/README.md
 
 # Python cache files
 __pycache__/
@@ -50,3 +56,9 @@ local_settings.py
 # Google Cloud service account keys
 secrets/
 *.json
+
+# Keep data log placeholders visible despite the generic logs/ rule above.
+!data/outputs/logs/
+!data/outputs/logs/.gitkeep
+!data/outputs/debug/logs/
+!data/outputs/debug/logs/.gitkeep

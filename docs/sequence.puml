@@ -1,0 +1,67 @@
+@startuml
+participant "main.py" as main
+participant "utils.logging_config" as logging
+participant "python-dotenv" as dotenv
+participant "BenchmarkRunner\n(src/carmina/tools/benchmark_runner.py)" as runner
+participant "ModelExecutor\n(src/carmina/model_executor.py)" as executor
+participant "BenchmarkSummary\n(src/carmina/tools/benchmark_summary.py)" as summary
+participant "os (Python module)" as OS
+participant "Filesystem/Env Vars" as Filesystem
+
+main -> logging: setup_logging()
+activate logging
+logging --> main: logger
+deactivate logging
+main -> main: logger.info("Start")
+
+main -> runner: BenchmarkRunner()
+activate runner
+runner -> dotenv: load_dotenv()
+activate dotenv
+dotenv --> runner
+deactivate dotenv
+runner -> Filesystem: Read Env Vars (MODELS, INPUT_DIR, etc.)
+runner -> OS: makedirs(output_dir)
+runner -> OS: makedirs(metrics_dir)
+runner --> main: runner_instance
+deactivate runner
+
+main -> runner: run()
+activate runner
+
+loop For each model in self.models
+    runner -> executor: ModelExecutor(model, input_path, output_dir, metrics_dir)
+    activate executor
+    executor --> runner: executor_instance
+    deactivate executor
+
+    runner -> executor: execute()
+    activate executor
+    executor -> Filesystem: Read input data (input_path)
+    note right of executor: Process data with the specific LLM
+    executor -> Filesystem: Write output (output_dir)
+    executor -> Filesystem: Write metrics (metrics_dir/results_{model}.json)
+    executor --> runner
+    deactivate executor
+end
+
+runner -> summary: BenchmarkSummary(models, metrics_dir)
+activate summary
+summary --> runner: summary_instance
+deactivate summary
+
+runner -> summary: generate()
+activate summary
+loop For each model in models
+    summary -> OS: path.exists(metrics_file)
+    summary -> Filesystem: Read metrics_file (metrics_dir/results_{model}.json)
+end
+summary -> Filesystem: Write summary (metrics_dir/benchmark_summary.json)
+summary --> runner
+deactivate summary
+
+runner --> main
+deactivate runner
+
+main -> main: logger.info("Completed")
+@enduml

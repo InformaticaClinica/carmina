@@ -1,0 +1,21 @@
+@startuml
+start
+:main.py;
+:Configure logging;
+:Initialize BenchmarkRunner;
+:Load .env;
+:Read MODELS, INPUT_DIR, OUTPUT_DIR, METRICS_DIR and DEBUG_DIR;
+:Create output, metrics and debug directories;
+
+while (More models?) is (yes)
+  :Initialize ModelExecutor;
+  :Load records from data/inputs/;
+  :Run anonymization mode with the selected LLM provider;
+  :Write model output to data/outputs/;
+  :Write model metrics to data/outputs/metrics/;
+endwhile (no)
+
+:Generate benchmark summary;
+:Write benchmark_summary.json;
+stop
+@enduml
